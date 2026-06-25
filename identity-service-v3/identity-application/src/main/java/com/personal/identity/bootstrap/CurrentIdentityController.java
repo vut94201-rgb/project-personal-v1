@@ -1,6 +1,7 @@
 package com.personal.identity.bootstrap;
 
 
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -15,6 +16,7 @@ import java.util.Objects;
 public class CurrentIdentityController {
 
     @GetMapping
+    @PreAuthorize("hasAuthority('account.read')")
     public CurrentIdentityResponse currentIdentity(
             @AuthenticationPrincipal Jwt jwt
     ) {

@@ -1,16 +1,22 @@
 spring:
   application:
     name: identity-service
+
   security:
     oauth2:
       resource server:
         jwt:
           issuer-uri: ${KEYCLOAK_ISSUER_URI:http://localhost:9080/realms/identity-development}
           audiences:
-            - identity-api
+            - ${KEYCLOAK_AUDIENCE:identity-api}
+
 server:
   port: 8081
   shutdown: graceful
+
+identity:
+  keycloak:
+    resource-client-id: ${KEYCLOAK_RESOURCE_CLIENT_ID:identity-api}
 
 management:
   endpoints:

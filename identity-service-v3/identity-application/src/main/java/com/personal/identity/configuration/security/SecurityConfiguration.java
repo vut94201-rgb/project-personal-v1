@@ -7,6 +7,7 @@ import org.springframework.security.config.annotation.method.configuration.Enabl
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.web.SecurityFilterChain;
 
 @Configuration
@@ -14,7 +15,8 @@ import org.springframework.security.web.SecurityFilterChain;
 public class SecurityConfiguration {
 
   @Bean
-  SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+  SecurityFilterChain securityFilterChain(
+      HttpSecurity http, JwtAuthenticationConverter jwtAuthenticationConverter) throws Exception {
 
     return http.csrf(AbstractHttpConfigurer::disable)
         .sessionManagement(
@@ -30,6 +32,11 @@ public class SecurityConfiguration {
                     .authenticated()
                     .anyRequest()
                     .denyAll())
+        .oauth2ResourceServer(
+            httpSecurityOAuth2ResourceServerConfigurer ->
+                httpSecurityOAuth2ResourceServerConfigurer.jwt(
+                    jwtConfigurer ->
+                        jwtConfigurer.jwtAuthenticationConverter(jwtAuthenticationConverter)))
         .oauth2ResourceServer(resourceServer -> resourceServer.jwt(Customizer.withDefaults()))
         .build();
   }
