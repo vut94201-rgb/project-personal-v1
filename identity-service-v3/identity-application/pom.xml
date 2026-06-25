@@ -31,8 +31,38 @@
     </properties>
     <dependencies>
         <dependency>
+            <groupId>com.personal</groupId>
+            <artifactId>identity-account</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.personal</groupId>
+            <artifactId>identity-organization</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.personal</groupId>
+            <artifactId>identity-access</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.personal</groupId>
+            <artifactId>identity-keycloak</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.personal</groupId>
+            <artifactId>identity-audit</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
             <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter</artifactId>
+            <artifactId>spring-boot-starter-actuator</artifactId>
         </dependency>
 
         <dependency>
