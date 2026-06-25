@@ -16,21 +16,7 @@
     <name>identity-access</name>
     <description>identity-access</description>
     <url/>
-    <licenses>
-        <license/>
-    </licenses>
-    <developers>
-        <developer/>
-    </developers>
-    <scm>
-        <connection/>
-        <developerConnection/>
-        <tag/>
-        <url/>
-    </scm>
-    <properties>
 
-    </properties>
     <dependencies>
         <dependency>
             <groupId>com.personal</groupId>

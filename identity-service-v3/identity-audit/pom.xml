@@ -14,21 +14,7 @@
     <name>identity-audit</name>
     <description>identity-audit</description>
     <url/>
-    <licenses>
-        <license/>
-    </licenses>
-    <developers>
-        <developer/>
-    </developers>
-    <scm>
-        <connection/>
-        <developerConnection/>
-        <tag/>
-        <url/>
-    </scm>
-    <properties>
 
-    </properties>
     <dependencies>
         <dependency>
             <groupId>com.personal</groupId>

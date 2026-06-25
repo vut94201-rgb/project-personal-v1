@@ -1,4 +1,4 @@
-package com.personal.identity.application;
+package com.personal.identity;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
