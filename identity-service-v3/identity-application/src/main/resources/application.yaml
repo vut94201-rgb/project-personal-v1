@@ -2,6 +2,12 @@ spring:
   application:
     name: identity-service
 
+  security:
+    oauth2:
+      resource server:
+        jwt:
+          issuer-uri: ${KEYCLOAK_ISSUER_URI:http://localhost:9080/realms/identity-development}
+
 server:
   port: 8081
   shutdown: graceful
@@ -17,3 +23,5 @@ management:
   endpoint:
     health:
       show-details: always
+      probes:
+        enabled: true
