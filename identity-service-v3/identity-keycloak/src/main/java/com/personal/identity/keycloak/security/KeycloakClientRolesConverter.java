@@ -1,4 +1,4 @@
-package com.personal.identitykeycloak.internal.security;
+package com.personal.identity.keycloak.security;
 
 import org.jspecify.annotations.NonNull;
 import org.springframework.core.convert.converter.Converter;
