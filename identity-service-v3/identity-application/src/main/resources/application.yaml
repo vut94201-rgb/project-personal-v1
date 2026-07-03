@@ -2,6 +2,25 @@ spring:
   application:
     name: identity-service
 
+  datasource:
+    url: ${IDENTITY_DB_URL:jdbc:postgresql://localhost:5432/app_identity_service}
+    username: ${IDENTITY_DB_USERNAME:app_identity_service}
+    password: ${IDENTITY_DB_PASSWORD:StrongPassword123!}
+
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: UTC
+
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+
+
   security:
     oauth2:
       resource server:

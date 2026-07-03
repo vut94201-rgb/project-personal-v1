@@ -37,7 +37,7 @@ public class SecurityConfiguration {
                 httpSecurityOAuth2ResourceServerConfigurer.jwt(
                     jwtConfigurer ->
                         jwtConfigurer.jwtAuthenticationConverter(jwtAuthenticationConverter)))
-        .oauth2ResourceServer(resourceServer -> resourceServer.jwt(Customizer.withDefaults()))
+//        .oauth2ResourceServer(resourceServer -> resourceServer.jwt(Customizer.withDefaults()))
         .build();
   }
 }
