@@ -1,6 +1,5 @@
-package com.personal.identity.account.infrastructure;
+package com.personal.identity.jpa.support.converter;
 
-import com.personal.identity.account.domain.enums.StringCodeEnum;
 import jakarta.persistence.AttributeConverter;
 
 import java.util.HashMap;

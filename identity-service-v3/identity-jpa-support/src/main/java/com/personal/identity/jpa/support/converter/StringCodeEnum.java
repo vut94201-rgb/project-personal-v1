@@ -1,4 +1,4 @@
-package com.personal.identity.account.domain.enums;
+package com.personal.identity.jpa.support.converter;
 
 public interface     StringCodeEnum {
      String getCode();

@@ -1,9 +1,8 @@
-package com.personal.identity.account.domain.enums;
+package com.personal.identity.account.infrastructure.persistence.converter;
 
-import com.personal.identity.account.infrastructure.AbstractStringCodeEnumConverter;
+import com.personal.identity.account.domain.enums.UserStatus;
+import com.personal.identity.jpa.support.converter.AbstractStringCodeEnumConverter;
 import jakarta.persistence.Converter;
-
-import java.util.Map;
 
 @Converter(autoApply = true)
 public class UserStatusConverter extends AbstractStringCodeEnumConverter<UserStatus> {

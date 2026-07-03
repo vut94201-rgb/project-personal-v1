@@ -1,4 +1,4 @@
-package com.personal.identity.account.domain;
+package com.personal.identity.jpa.support.entity.base;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.EntityListeners;

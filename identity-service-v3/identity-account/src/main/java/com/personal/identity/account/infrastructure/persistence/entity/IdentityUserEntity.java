@@ -1,6 +1,6 @@
 package com.personal.identity.account.infrastructure.persistence.entity;
 
-import com.personal.identity.account.domain.SoftDeletableEntity;
+import com.personal.identity.jpa.support.entity.base.SoftDeletableEntity;
 import com.personal.identity.account.domain.enums.Gender;
 import com.personal.identity.account.domain.enums.UserStatus;
 import jakarta.persistence.*;

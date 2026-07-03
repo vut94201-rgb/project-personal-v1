@@ -1,6 +1,6 @@
 package com.personal.identity.account.domain.enums;
 
-public enum UserStatus implements StringCodeEnum {
+public enum UserStatus implements com.personal.identity.jpa.support.converter.StringCodeEnum {
   ACTIVE("A"),
   INACTIVE("I"),
   LOCKED("L"),
