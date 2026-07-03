@@ -21,6 +21,7 @@ spring:
     locations: classpath:db/migration
 
 
+
   security:
     oauth2:
       resource server:

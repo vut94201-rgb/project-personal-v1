@@ -1,3 +1,10 @@
+CREATE  SEQUENCE  identity_user_seq
+    START WITH 1
+    INCREMENT BY 1
+    MINVALUE 1
+    NO MAXVALUE
+    CACHE 1;
+
 CREATE TABLE identity_users
 (
     id               BIGINT                      NOT NULL,
