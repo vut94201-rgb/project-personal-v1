@@ -26,6 +26,7 @@
         <module>identity-audit</module>
         <module>identity-application</module>
         <module>identity-shared</module>
+        <module>identity-jpa-support</module>
     </modules>
 
     <properties>

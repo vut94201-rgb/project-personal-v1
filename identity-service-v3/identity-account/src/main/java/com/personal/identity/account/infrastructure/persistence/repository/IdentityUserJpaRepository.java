@@ -5,7 +5,7 @@ import com.personal.identity.jpa.support.repository.SoftDeleteJpaRepository;
 import org.springframework.stereotype.Repository;
 
 @Repository
-public interface UserRepository extends SoftDeleteJpaRepository<IdentityUserEntity,Long> {
+public interface IdentityUserJpaRepository extends SoftDeleteJpaRepository<IdentityUserEntity,Long> {
 
 
 

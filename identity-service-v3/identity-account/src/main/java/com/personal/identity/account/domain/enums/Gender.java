@@ -1,6 +1,8 @@
 package com.personal.identity.account.domain.enums;
 
-public enum Gender implements com.personal.identity.jpa.support.converter.StringCodeEnum {
+import com.personal.enums.StringCodeEnum;
+
+public enum Gender implements StringCodeEnum {
   OTHER("O"),
   MALE("M"),
   FEMALE("F");

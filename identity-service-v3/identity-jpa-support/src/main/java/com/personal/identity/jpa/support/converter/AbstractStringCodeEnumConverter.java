@@ -1,5 +1,6 @@
 package com.personal.identity.jpa.support.converter;
 
+import com.personal.enums.StringCodeEnum;
 import jakarta.persistence.AttributeConverter;
 
 import java.util.HashMap;
