@@ -80,22 +80,22 @@ public class IdentityUserService {
     return identityUserMapper.toIdentityUserResponse(identityUserJpaRepository.save(entity));
   }
 
-  @Transactional
-  public IdentityUserResponse createNew(CreateIdentityUserRequest request) {
-    validateUniqueUsername(request.username(), null);
-    validateUniqueEmail(request.email(), null);
-
-    IdentityUserEntity entity =
-        IdentityUserEntity.create(
-            request.username(),
-            request.email(),
-            request.phoneNumber(),
-            request.dateOfBirth(),
-            request.gender(),
-            null);
-    IdentityUserEntity saved = identityUserJpaRepository.save(entity);
-    return identityUserMapper.toIdentityUserResponse(entity);
-  }
+//  @Transactional
+//  public IdentityUserResponse createNew(CreateIdentityUserRequest request) {
+//    validateUniqueUsername(request.username(), null);
+//    validateUniqueEmail(request.email(), null);
+//
+//    IdentityUserEntity entity =
+//        IdentityUserEntity.create(
+//            request.username(),
+//            request.email(),
+//            request.phoneNumber(),
+//            request.dateOfBirth(),
+//            request.gender(),
+//            null);
+//    IdentityUserEntity saved = identityUserJpaRepository.save(entity);
+//    return identityUserMapper.toIdentityUserResponse(entity);
+//  }
 
   @Transactional
   public void softDelete(Long id, String actor) {

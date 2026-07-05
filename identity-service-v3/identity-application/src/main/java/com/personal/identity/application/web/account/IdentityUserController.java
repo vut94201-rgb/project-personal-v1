@@ -29,14 +29,14 @@ public class IdentityUserController {
     this.identityUserService = identityUserService;
   }
 
-  @PostMapping
-  public ResponseEntity<IdentityUserResponse> create(
-      @Valid @RequestBody CreateIdentityUserRequest request) {
-
-    IdentityUserResponse response = identityUserService.createNew(request);
-
-    return ResponseEntity.status(HttpStatus.CREATED).body(response);
-  }
+//  @PostMapping
+//  public ResponseEntity<IdentityUserResponse> create(
+//      @Valid @RequestBody CreateIdentityUserRequest request) {
+//
+//    IdentityUserResponse response = identityUserService.createNew(request);
+//
+//    return ResponseEntity.status(HttpStatus.CREATED).body(response);
+//  }
 
   @GetMapping("/{id}")
   public IdentityUserResponse getById(@PathVariable Long id) {
