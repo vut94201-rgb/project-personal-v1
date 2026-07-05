@@ -1,4 +1,4 @@
-package com.personal.identity.configuration.audit;
+package com.personal.identity.application.configuration.audit;
 
 import com.nimbusds.jose.proc.SecurityContext;
 import org.springframework.context.annotation.Bean;

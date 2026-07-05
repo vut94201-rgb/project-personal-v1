@@ -4,6 +4,7 @@ import jakarta.persistence.Column;
 import jakarta.persistence.MappedSuperclass;
 
 import java.time.Instant;
+import java.util.Objects;
 
 @MappedSuperclass
 public abstract class SoftDeletableEntity extends AuditableEntity {
@@ -20,7 +21,7 @@ public abstract class SoftDeletableEntity extends AuditableEntity {
   public void softDelete(String actor, Instant deletedAt) {
     if (this.deleted) return;
     this.deleted = true;
-    this.deletedAt = deletedAt;
+    this.deletedAt = Objects.requireNonNull(deletedAt, "deletedAt must not be null");
     this.deletedBy = actor;
   }
 

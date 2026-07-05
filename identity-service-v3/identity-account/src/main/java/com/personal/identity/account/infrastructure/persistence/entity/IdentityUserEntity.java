@@ -3,14 +3,18 @@ package com.personal.identity.account.infrastructure.persistence.entity;
 import com.personal.identity.jpa.support.entity.base.SoftDeletableEntity;
 import com.personal.identity.account.domain.enums.Gender;
 import com.personal.identity.account.domain.enums.UserStatus;
+import com.personal.shared.utility.PhoneNumberNormalizer;
 import jakarta.persistence.*;
+import lombok.Getter;
 import org.springframework.util.StringUtils;
 
+import java.time.LocalDate;
 import java.util.Locale;
 import java.util.Objects;
 import java.util.UUID;
 
 @Entity
+@Getter
 @Table(name = "identity_users")
 public class IdentityUserEntity extends SoftDeletableEntity {
   @Id
@@ -40,39 +44,20 @@ public class IdentityUserEntity extends SoftDeletableEntity {
   @Column(name = "gender", nullable = false, length = 1)
   private Gender gender;
 
+  @Column(name = "date_of_birth")
+  private LocalDate dateOfBirth;
+
   protected IdentityUserEntity() {}
 
-  public IdentityUserEntity(UUID keycloakUserId, String username, String email, Gender gender) {
-    this.keycloakUserId = Objects.requireNonNull(keycloakUserId, "keycloakUserId must not be null");
+  private IdentityUserEntity(
+      String username, String email, String phoneNumber, LocalDate dateOfBirth, Gender gender) {
 
     this.username = normalizeUsername(username);
     this.email = normalizeEmail(email);
-    this.gender = requireGender(gender);
+    this.phoneNumber = PhoneNumberNormalizer.normalize(phoneNumber);
+    this.dateOfBirth = dateOfBirth;
+    this.gender = Objects.requireNonNull(gender, "gender must not be null");
     this.status = UserStatus.PENDING;
-  }
-
-  public Long getId() {
-    return id;
-  }
-
-  public UUID getKeycloakUserId() {
-    return keycloakUserId;
-  }
-
-  public String getUsername() {
-    return username;
-  }
-
-  public UserStatus getStatus() {
-    return status;
-  }
-
-  public String getEmail() {
-    return email;
-  }
-
-  public Gender getGender() {
-    return gender;
   }
 
   public void changeUsername(String username) {
@@ -97,6 +82,31 @@ public class IdentityUserEntity extends SoftDeletableEntity {
 
   public void changeEmail(String email) {
     this.email = normalizeEmail(email);
+  }
+
+  public void changeDateOfBirth(LocalDate dateOfBirth) {
+    this.dateOfBirth = Objects.requireNonNull(dateOfBirth);
+  }
+
+  public void changePhoneNUmber(String phoneNumber) {
+    this.phoneNumber = PhoneNumberNormalizer.normalize(phoneNumber);
+  }
+
+  public void changeUserStatus(UserStatus userStatus) {
+    this.status = Objects.requireNonNull(userStatus);
+  }
+
+  public static IdentityUserEntity create(
+      String username,
+      String email,
+      String phoneNumber,
+      LocalDate dateOfBirth,
+      Gender gender,
+      UUID keycloakUserId) {
+    IdentityUserEntity entity =
+        new IdentityUserEntity(username, email, phoneNumber, dateOfBirth, gender);
+    entity.keycloakUserId = keycloakUserId;
+    return entity;
   }
 
   //  private static String requireValidUsername(String username) {
@@ -124,6 +134,33 @@ public class IdentityUserEntity extends SoftDeletableEntity {
     }
 
     return normalized;
+  }
+
+  //  public void updateProfile(
+  //      String email, String phoneNumber, Gender gender, LocalDate dateOfBirth,UserStatus
+  // userStatus) {
+  //
+  //    if (Objects.nonNull(email)) this.email = normalizeEmail(email);
+  //
+  //    if (Objects.nonNull(phoneNumber))
+  //      this.phoneNumber = PhoneNumberNormalizer.normalize(phoneNumber);
+  //
+  //    if (Objects.nonNull(gender)) this.gender = gender;
+  //
+  //    if (Objects.nonNull(dateOfBirth)) this.dateOfBirth = dateOfBirth;
+  //  }
+  public void updateProfile(
+      String email,
+      String phoneNumber,
+      Gender gender,
+      LocalDate dateOfBirth,
+      UserStatus userStatus) {
+
+    if (StringUtils.hasText(email)) changeEmail(email);
+    if (StringUtils.hasText(phoneNumber)) changePhoneNUmber(phoneNumber);
+    if (Objects.nonNull(dateOfBirth)) changeDateOfBirth(dateOfBirth);
+    if (Objects.nonNull(gender)) changeGender(gender);
+    if (Objects.nonNull(status)) changeUserStatus(status);
   }
 
   private static String normalizeEmail(String email) {

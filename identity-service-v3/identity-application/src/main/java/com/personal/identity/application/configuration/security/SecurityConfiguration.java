@@ -1,4 +1,4 @@
-package com.personal.identity.configuration.security;
+package com.personal.identity.application.configuration.security;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

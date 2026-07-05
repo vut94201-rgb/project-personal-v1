@@ -1,6 +1,6 @@
 package com.personal.identity.account.domain.enums;
 
-import com.personal.enums.StringCodeEnum;
+import com.personal.shared.enums.StringCodeEnum;
 
 public enum UserStatus implements StringCodeEnum {
   ACTIVE("A"),

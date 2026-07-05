@@ -1,4 +1,4 @@
-package com.personal.identity.bootstrap;
+package com.personal.identity.application.bootstrap;
 
 
 import org.springframework.security.access.prepost.PreAuthorize;
