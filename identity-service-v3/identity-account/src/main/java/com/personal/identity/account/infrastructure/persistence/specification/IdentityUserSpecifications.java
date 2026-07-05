@@ -45,7 +45,7 @@ public final class IdentityUserSpecifications {
   public static Specification<IdentityUserEntity> emailContains(String email) {
     if (!StringUtils.hasText(email)) return Specification.unrestricted();
 
-    String pattern = "%" + email.strip() + "%";
+    String pattern = "%" + email.strip().toLowerCase() + "%";
     return (root, query, criteriaBuilder) ->
         criteriaBuilder.like(criteriaBuilder.lower(root.get("email")), pattern);
   }

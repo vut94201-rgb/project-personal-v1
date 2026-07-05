@@ -8,12 +8,14 @@ import com.personal.identity.account.domain.enums.Gender;
 import com.personal.identity.account.domain.enums.UserStatus;
 import com.personal.identity.account.application.service.IdentityUserService;
 import jakarta.validation.Valid;
+
 import lombok.AccessLevel;
 import lombok.experimental.FieldDefaults;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -71,7 +73,7 @@ public class IdentityUserController {
 
   @DeleteMapping("/{id}")
   @ResponseStatus(HttpStatus.NO_CONTENT)
-  public void delete(@PathVariable Long id) {
-    identityUserService.softDelete(id, "system");
+  public void delete(@PathVariable Long id, Authentication authentication) {
+    identityUserService.softDelete(id, authentication.getName());
   }
 }

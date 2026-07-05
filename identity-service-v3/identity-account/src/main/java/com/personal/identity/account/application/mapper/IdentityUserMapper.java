@@ -13,7 +13,7 @@ import java.util.Objects;
 @Mapper(componentModel = "spring", builder = @Builder(disableBuilder = true))
 public interface IdentityUserMapper {
   @Mapping(target = "id", ignore = false)
-  @Mapping(target = "keycloakUserId", ignore = true)
+
   IdentityUserResponse toIdentityUserResponse(IdentityUserEntity identityUserEntity);
 
 //  default void updateEntityFromUpdateIdentityUserRequest(

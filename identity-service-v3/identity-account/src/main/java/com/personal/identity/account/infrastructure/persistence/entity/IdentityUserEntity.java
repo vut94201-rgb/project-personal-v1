@@ -50,15 +50,29 @@ public class IdentityUserEntity extends SoftDeletableEntity {
   protected IdentityUserEntity() {}
 
   private IdentityUserEntity(
-      String username, String email, String phoneNumber, LocalDate dateOfBirth, Gender gender) {
+          UUID keycloakUserId,
+          String username,
+          String email,
+          String phoneNumber,
+          LocalDate dateOfBirth,
+          Gender gender) {
+
+    this.keycloakUserId =
+            Objects.requireNonNull(
+                    keycloakUserId,
+                    "keycloakUserId must not be null");
 
     this.username = normalizeUsername(username);
     this.email = normalizeEmail(email);
     this.phoneNumber = PhoneNumberNormalizer.normalize(phoneNumber);
-    this.dateOfBirth = dateOfBirth;
-    this.gender = Objects.requireNonNull(gender, "gender must not be null");
+    this.dateOfBirth =
+            Objects.requireNonNull(
+                    dateOfBirth,
+                    "dateOfBirth must not be null");
+    this.gender = requireGender(gender);
     this.status = UserStatus.PENDING;
   }
+
 
   public void changeUsername(String username) {
     this.username = normalizeUsername(username);
@@ -97,18 +111,21 @@ public class IdentityUserEntity extends SoftDeletableEntity {
   }
 
   public static IdentityUserEntity create(
-      String username,
-      String email,
-      String phoneNumber,
-      LocalDate dateOfBirth,
-      Gender gender,
-      UUID keycloakUserId) {
-    IdentityUserEntity entity =
-        new IdentityUserEntity(username, email, phoneNumber, dateOfBirth, gender);
-    entity.keycloakUserId = keycloakUserId;
-    return entity;
-  }
+          UUID keycloakUserId,
+          String username,
+          String email,
+          String phoneNumber,
+          LocalDate dateOfBirth,
+          Gender gender) {
 
+    return new IdentityUserEntity(
+            keycloakUserId,
+            username,
+            email,
+            phoneNumber,
+            dateOfBirth,
+            gender);
+  }
   //  private static String requireValidUsername(String username) {
   //    if (!StringUtils.hasText(username)) {
   //      throw new IllegalArgumentException("username must not be blank");
@@ -160,7 +177,7 @@ public class IdentityUserEntity extends SoftDeletableEntity {
     if (StringUtils.hasText(phoneNumber)) changePhoneNUmber(phoneNumber);
     if (Objects.nonNull(dateOfBirth)) changeDateOfBirth(dateOfBirth);
     if (Objects.nonNull(gender)) changeGender(gender);
-    if (Objects.nonNull(status)) changeUserStatus(status);
+    if (Objects.nonNull(status)) changeUserStatus(userStatus);
   }
 
   private static String normalizeEmail(String email) {
@@ -176,6 +193,7 @@ public class IdentityUserEntity extends SoftDeletableEntity {
 
     return normalized;
   }
+
 
   private static Gender requireGender(Gender gender) {
     return Objects.requireNonNull(gender, "gender must not be null");

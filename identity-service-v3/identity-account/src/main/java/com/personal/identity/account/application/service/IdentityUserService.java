@@ -13,6 +13,7 @@ import com.personal.identity.account.infrastructure.persistence.entity.IdentityU
 import com.personal.identity.account.infrastructure.persistence.repository.IdentityUserJpaRepository;
 import com.personal.identity.account.infrastructure.persistence.specification.IdentityUserSpecifications;
 import com.personal.identity.jpa.support.specification.SoftDeleteSpecifications;
+import com.personal.shared.utility.PhoneNumberNormalizer;
 import lombok.AccessLevel;
 import lombok.experimental.FieldDefaults;
 import org.springframework.data.domain.Page;
@@ -121,8 +122,10 @@ public class IdentityUserService {
   }
 
   private void validateUniquePhoneNumberForUpdate(String phoneNumber, Long currentId) {
+
     if (identityUserJpaRepository.checkDuplicatePhoneNumberForUpdateAndCreate(
-        phoneNumber, currentId)) throw new DuplicatePhoneNumberException(phoneNumber);
+        phoneNumber, currentId))
+      throw new DuplicatePhoneNumberException(PhoneNumberNormalizer.normalize(phoneNumber));
   }
 
   private void validateDuplicateForUpdate(
