@@ -26,7 +26,7 @@ public class Account {
         this.id = Objects.requireNonNull(id);
         this.employeeId = Objects.requireNonNull(employeeId);
         this.username = requireText(username, "username");
-        this.keycloakSubject = keycloakSubject;
+        this.keycloakSubject = normalizeNullable(keycloakSubject);
         this.status = Objects.requireNonNull(status);
     }
 
@@ -60,10 +60,17 @@ public class Account {
         );
     }
 
+    /**
+     * Links the account to the external identity and activates it.
+     *
+     * <p>The operation is idempotent for an already active account so a
+     * reconciliation run can repair an external identifier after an IdP
+     * restore without creating a second business account.</p>
+     */
     public void provision(String keycloakSubject) {
-        if (status != AccountStatus.PENDING) {
+        if (status == AccountStatus.DISABLED) {
             throw new IllegalStateException(
-                    "Only pending account can be provisioned"
+                    "Disabled account cannot be provisioned"
             );
         }
 
@@ -99,5 +106,14 @@ public class Account {
         }
 
         return normalized;
+    }
+
+    private static String normalizeNullable(String value) {
+        if (value == null) {
+            return null;
+        }
+
+        String normalized = value.trim();
+        return normalized.isEmpty() ? null : normalized;
     }
 }

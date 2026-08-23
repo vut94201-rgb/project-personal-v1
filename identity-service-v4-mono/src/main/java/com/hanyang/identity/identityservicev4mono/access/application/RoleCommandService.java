@@ -7,6 +7,7 @@ import com.hanyang.identity.identityservicev4mono.access.application.exception.A
 import com.hanyang.identity.identityservicev4mono.access.application.exception.ApplicationNotFoundException;
 import com.hanyang.identity.identityservicev4mono.access.application.exception.RoleCodeAlreadyExistsException;
 import com.hanyang.identity.identityservicev4mono.access.application.exception.RoleNotFoundException;
+import com.hanyang.identity.identityservicev4mono.access.application.provisioning.RoleProvisioningService;
 import com.hanyang.identity.identityservicev4mono.access.domain.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -18,6 +19,7 @@ public class RoleCommandService {
 
     private final RoleRepository roleRepository;
     private final ApplicationRepository applicationRepository;
+    private final RoleProvisioningService provisioningService;
 
     @Transactional
     public Role create(CreateRoleCommand command) {
@@ -52,7 +54,10 @@ public class RoleCommandService {
             );
         }
 
-        return roleRepository.save(role);
+        Role saved = roleRepository.save(role);
+        provisioningService.requestSynchronization(saved.getId());
+
+        return saved;
     }
 
     @Transactional
@@ -65,7 +70,10 @@ public class RoleCommandService {
 
         role.rename(command.name());
 
-        return roleRepository.save(role);
+        Role saved = roleRepository.save(role);
+        provisioningService.requestSynchronization(saved.getId());
+
+        return saved;
     }
 
     @Transactional
@@ -77,6 +85,7 @@ public class RoleCommandService {
                 );
 
         role.disable();
-        roleRepository.save(role);
+        Role saved = roleRepository.save(role);
+        provisioningService.requestSynchronization(saved.getId());
     }
 }

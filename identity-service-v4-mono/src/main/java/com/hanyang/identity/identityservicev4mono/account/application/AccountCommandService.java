@@ -6,6 +6,9 @@ import com.hanyang.identity.identityservicev4mono.account.application.exception.
 import com.hanyang.identity.identityservicev4mono.account.application.exception.EmployeeAlreadyHasAccountException;
 import com.hanyang.identity.identityservicev4mono.account.application.exception.UsernameAlreadyExistsException;
 import com.hanyang.identity.identityservicev4mono.account.application.port.IdentityProviderAccountPort;
+import com.hanyang.identity.identityservicev4mono.account.application.provisioning.AccountProvisioningService;
+import com.hanyang.identity.identityservicev4mono.account.application.provisioning.AccountProvisioningStatus;
+import com.hanyang.identity.identityservicev4mono.account.application.provisioning.AccountReconciliationResult;
 import com.hanyang.identity.identityservicev4mono.account.domain.Account;
 import com.hanyang.identity.identityservicev4mono.account.domain.AccountId;
 import com.hanyang.identity.identityservicev4mono.account.domain.AccountRepository;
@@ -23,7 +26,7 @@ public class AccountCommandService {
 
     private final AccountRepository accountRepository;
     private final EmployeeRepository employeeRepository;
-    private final IdentityProviderAccountPort identityProviderAccountPort;
+    private final AccountProvisioningService provisioningService;
 
     @Transactional
     public Account create(CreateAccountCommand command) {
@@ -57,17 +60,18 @@ public class AccountCommandService {
                 command.username()
         );
 
-        return accountRepository.save(account);
+        Account saved = accountRepository.save(account);
+        provisioningService.requestSynchronization(saved.getId());
+        return saved;
     }
 
-    @Transactional
+    /**
+     * Immediate/manual provisioning entry point kept for the existing REST API.
+     * Normal delivery is now driven by the transactional outbox.
+     */
     public Account provision(AccountId accountId) {
-
-        Account account =
-                accountRepository.findById(accountId)
-                        .orElseThrow(() ->
-                                new AccountNotFoundException(accountId)
-                        );
+        Account account = accountRepository.findById(accountId)
+                .orElseThrow(() -> new AccountNotFoundException(accountId));
 
         if (account.getStatus() != AccountStatus.PENDING) {
             throw new AccountProvisioningNotAllowedException(
@@ -76,14 +80,20 @@ public class AccountCommandService {
             );
         }
 
-        String keycloakSubject =
-                identityProviderAccountPort.createUser(
-                        account.getUsername()
-                );
+        AccountReconciliationResult result = provisioningService.reconcile(accountId);
+        if (result.status() != AccountProvisioningStatus.SYNCED) {
+            throw new IllegalStateException(
+                    result.error() == null || result.error().isBlank()
+                            ? "Account provisioning did not complete successfully. status="
+                            + result.status()
+                            + ", accountId="
+                            + accountId.value()
+                            : result.error()
+            );
+        }
 
-        account.provision(keycloakSubject);
-
-        return accountRepository.save(account);
+        return accountRepository.findById(accountId)
+                .orElseThrow(() -> new AccountNotFoundException(accountId));
     }
 
     @Transactional
@@ -95,15 +105,8 @@ public class AccountCommandService {
                                 new AccountNotFoundException(accountId)
                         );
 
-        if (account.getKeycloakSubject() != null
-                && !account.getKeycloakSubject().isBlank()) {
-            identityProviderAccountPort.disableUser(
-                    account.getKeycloakSubject()
-            );
-        }
-
         account.disable();
-
         accountRepository.save(account);
+        provisioningService.requestSynchronization(accountId);
     }
 }

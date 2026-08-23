@@ -3,6 +3,7 @@ package com.hanyang.identity.identityservicev4mono.access.application;
 
 import com.hanyang.identity.identityservicev4mono.access.application.exception.*;
 import com.hanyang.identity.identityservicev4mono.access.application.port.IdentityProviderAccessPort;
+import com.hanyang.identity.identityservicev4mono.access.application.provisioning.AccountRoleProvisioningService;
 import com.hanyang.identity.identityservicev4mono.access.domain.*;
 import com.hanyang.identity.identityservicev4mono.account.application.exception.AccountNotFoundException;
 import com.hanyang.identity.identityservicev4mono.account.domain.Account;
@@ -21,7 +22,7 @@ public class AccountRoleCommandService {
     private final RoleRepository roleRepository;
     private final ApplicationRepository applicationRepository;
     private final AccountRoleRepository accountRoleRepository;
-    private final IdentityProviderAccessPort identityProviderAccessPort;
+    private final AccountRoleProvisioningService provisioningService;
 
     @Transactional
     public void assign(
@@ -30,7 +31,7 @@ public class AccountRoleCommandService {
     ) {
         Account account = getAccount(accountId);
         Role role = getRole(roleId);
-        Application application = validateAssignable(account, role);
+        validateAssignable(account, role);
 
         if (accountRoleRepository.exists(accountId, roleId)) {
             throw new AccountRoleAlreadyAssignedException(
@@ -43,10 +44,10 @@ public class AccountRoleCommandService {
                 AccountRole.create(accountId, roleId)
         );
 
-        identityProviderAccessPort.assignRole(
-                account.getKeycloakSubject(),
-                application.getCode(),
-                role.getCode()
+        provisioningService.requestSynchronization(
+                accountId,
+                roleId,
+                true
         );
     }
 
@@ -55,8 +56,8 @@ public class AccountRoleCommandService {
             AccountId accountId,
             RoleId roleId
     ) {
-        Account account = getAccount(accountId);
-        Role role = getRole(roleId);
+        getAccount(accountId);
+        getRole(roleId);
 
         if (!accountRoleRepository.exists(accountId, roleId)) {
             throw new AccountRoleNotAssignedException(
@@ -65,23 +66,12 @@ public class AccountRoleCommandService {
             );
         }
 
-        Application application = applicationRepository
-                .findById(role.getApplicationId())
-                .orElseThrow(() ->
-                        new ApplicationNotFoundException(
-                                role.getApplicationId()
-                        )
-                );
-
         accountRoleRepository.delete(accountId, roleId);
-
-        if (hasKeycloakSubject(account)) {
-            identityProviderAccessPort.revokeRole(
-                    account.getKeycloakSubject(),
-                    application.getCode(),
-                    role.getCode()
-            );
-        }
+        provisioningService.requestSynchronization(
+                accountId,
+                roleId,
+                false
+        );
     }
 
     private Account getAccount(AccountId accountId) {
@@ -96,7 +86,7 @@ public class AccountRoleCommandService {
                 .orElseThrow(() -> new RoleNotFoundException(roleId));
     }
 
-    private Application validateAssignable(
+    private void validateAssignable(
             Account account,
             Role role
     ) {
@@ -104,11 +94,8 @@ public class AccountRoleCommandService {
             throw new AccountDisabledException(account.getId());
         }
 
-        if (account.getStatus() != AccountStatus.ACTIVE
-                || !hasKeycloakSubject(account)) {
-            throw new AccountNotProvisionedException(account.getId());
-        }
-
+        // PENDING accounts are allowed here. The outbox handler will provision
+        // the external user before assigning the role.
         if (role.getStatus() != RoleStatus.ACTIVE) {
             throw new RoleDisabledException(role.getId());
         }
@@ -124,12 +111,5 @@ public class AccountRoleCommandService {
         if (application.getStatus() != ApplicationStatus.ACTIVE) {
             throw new ApplicationDisabledException(application.getId());
         }
-
-        return application;
-    }
-
-    private boolean hasKeycloakSubject(Account account) {
-        return account.getKeycloakSubject() != null
-                && !account.getKeycloakSubject().isBlank();
     }
 }
