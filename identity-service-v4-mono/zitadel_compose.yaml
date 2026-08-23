@@ -1,0 +1,66 @@
+services:
+
+  zitadel-init:
+    image: ghcr.io/zitadel/zitadel:v4.17.1
+    container_name: hanyang-zitadel-init
+
+    environment:
+      ZITADEL_DATABASE_POSTGRES_DSN: >-
+        postgresql://${ZITADEL_DB_USER}:${ZITADEL_DB_PASSWORD}@identity-postgres:5432/${ZITADEL_DB_NAME}?sslmode=disable
+
+    command:
+      - init
+      - schema
+
+    networks:
+      - identity-network
+
+    restart: "no"
+
+
+  zitadel:
+    image: ghcr.io/zitadel/zitadel:v4.17.1
+    container_name: hanyang-zitadel
+
+    depends_on:
+      zitadel-init:
+        condition: service_completed_successfully
+
+    environment:
+      ZITADEL_DATABASE_POSTGRES_DSN: >-
+        postgresql://${ZITADEL_DB_USER}:${ZITADEL_DB_PASSWORD}@identity-postgres:5432/${ZITADEL_DB_NAME}?sslmode=disable
+
+      ZITADEL_EXTERNALDOMAIN: localhost
+      ZITADEL_EXTERNALPORT: 18081
+      ZITADEL_EXTERNALSECURE: "false"
+
+      ZITADEL_TLS_ENABLED: "false"
+
+      ZITADEL_FIRSTINSTANCE_ORG_HUMAN_USERNAME: ${ZITADEL_ADMIN_USERNAME}
+      ZITADEL_FIRSTINSTANCE_ORG_HUMAN_PASSWORD: ${ZITADEL_ADMIN_PASSWORD}
+      ZITADEL_FIRSTINSTANCE_ORG_HUMAN_PASSWORDCHANGEREQUIRED: "false"
+
+      # Test đơn giản: dùng Login V1 tích hợp trong ZITADEL binary.
+      # Sau này muốn Login V2 thì thêm zitadel-login + reverse proxy.
+      ZITADEL_DEFAULTINSTANCE_FEATURES_LOGINV2_REQUIRED: "false"
+
+    command:
+      - start-from-setup
+      - --masterkey
+      - ${ZITADEL_MASTERKEY}
+      - --tlsMode
+      - disabled
+
+    ports:
+      - "127.0.0.1:18081:8080"
+
+    networks:
+      - identity-network
+
+    restart: unless-stopped
+
+
+networks:
+  identity-network:
+    external: true
+    name: identity-service-v4-mono_default

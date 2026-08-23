@@ -1,0 +1,58 @@
+spring:
+  application:
+    name: identity-service-v4-mono
+
+  datasource:
+    url: jdbc:postgresql://localhost:${IDENTITY_DB_PORT:25434}/${IDENTITY_DB_NAME:identity_db}
+    username: ${IDENTITY_DB_USER:identity_user}
+    password: ${IDENTITY_DB_PASSWORD:identity_dev_password}
+
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        format_sql: true
+
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+
+  cloud:
+    consul:
+      host: ${CONSUL_HOST:localhost}
+      port: ${CONSUL_PORT:18500}
+
+      discovery:
+        register: true
+        register-health-check: false
+
+server:
+  port: ${SERVER_PORT:8082}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: when-authorized
+
+integration:
+  keycloak:
+    server-url: ${KEYCLOAK_URL:http://localhost:18080}
+    realm: ${KEYCLOAK_REALM:hanyang}
+    admin-client-id: ${KEYCLOAK_ADMIN_CLIENT_ID:identity-service-admin}
+    admin-client-secret: ${KEYCLOAK_ADMIN_CLIENT_SECRET:}
+
+outbox:
+  worker:
+    enabled: ${OUTBOX_WORKER_ENABLED:true}
+    fixed-delay-ms: ${OUTBOX_WORKER_FIXED_DELAY_MS:1000}
+    batch-size: ${OUTBOX_WORKER_BATCH_SIZE:20}
+    max-attempts: ${OUTBOX_WORKER_MAX_ATTEMPTS:8}
+    initial-backoff: ${OUTBOX_WORKER_INITIAL_BACKOFF:2s}
+    max-backoff: ${OUTBOX_WORKER_MAX_BACKOFF:5m}
+    processing-timeout: ${OUTBOX_WORKER_PROCESSING_TIMEOUT:5m}

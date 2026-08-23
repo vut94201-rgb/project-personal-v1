@@ -14,6 +14,6 @@ public enum Gender implements StringCodeEnum {
 
   @Override
   public String getCode() {
-    return this.code;
+    return this.code.;
   }
 }
