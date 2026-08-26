@@ -4,21 +4,21 @@ import com.hanyang.identity.identityservicev4mono.account.application.exception.
 import com.hanyang.identity.identityservicev4mono.account.domain.Account;
 import com.hanyang.identity.identityservicev4mono.account.domain.AccountId;
 import com.hanyang.identity.identityservicev4mono.account.domain.AccountRepository;
+import com.hanyang.identity.identityservicev4mono.security.authorization.IdentityReadAccess;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+
 @Service
+@IdentityReadAccess
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class AccountQueryService {
 
-    private final AccountRepository accountRepository;
+  private final AccountRepository accountRepository;
 
-    public Account getById(AccountId id) {
-        return accountRepository.findById(id)
-                .orElseThrow(() ->
-                        new AccountNotFoundException(id)
-                );
-    }
+  public Account getById(AccountId id) {
+    return accountRepository.findById(id).orElseThrow(() -> new AccountNotFoundException(id));
+  }
 }

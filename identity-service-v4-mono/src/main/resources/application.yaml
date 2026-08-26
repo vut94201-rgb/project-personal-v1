@@ -35,17 +35,29 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,info
+        include: health,info,metrics,prometheus
+
   endpoint:
     health:
       show-details: when-authorized
 
+  health:
+    ldap:
+      enabled: ${DS389_ENABLED:true}
 integration:
   keycloak:
     server-url: ${KEYCLOAK_URL:http://localhost:18080}
     realm: ${KEYCLOAK_REALM:hanyang}
     admin-client-id: ${KEYCLOAK_ADMIN_CLIENT_ID:identity-service-admin}
     admin-client-secret: ${KEYCLOAK_ADMIN_CLIENT_SECRET:}
+
+  ds389:
+    enabled: ${DS389_ENABLED:true}
+    url: ${DS389_URL:ldap://localhost:3389}
+    base-dn: ${DS389_BASE_DN:dc=hanyang,dc=local}
+    bind-dn: ${DS389_BIND_DN:cn=Directory Manager}
+    bind-password: ${DS389_BIND_PASSWORD:change_me}
+    people-ou: ${DS389_PEOPLE_OU:ou=People}
 
 outbox:
   worker:
@@ -56,3 +68,8 @@ outbox:
     initial-backoff: ${OUTBOX_WORKER_INITIAL_BACKOFF:2s}
     max-backoff: ${OUTBOX_WORKER_MAX_BACKOFF:5m}
     processing-timeout: ${OUTBOX_WORKER_PROCESSING_TIMEOUT:5m}
+
+operations:
+  provisioning-health:
+    stale-after: ${PROVISIONING_HEALTH_STALE_AFTER:15m}
+    provider-probe-enabled: ${PROVISIONING_HEALTH_PROVIDER_PROBE_ENABLED:true}

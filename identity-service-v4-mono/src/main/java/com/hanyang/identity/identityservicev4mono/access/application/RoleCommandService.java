@@ -1,6 +1,5 @@
 package com.hanyang.identity.identityservicev4mono.access.application;
 
-
 import com.hanyang.identity.identityservicev4mono.access.application.command.CreateRoleCommand;
 import com.hanyang.identity.identityservicev4mono.access.application.command.UpdateRoleCommand;
 import com.hanyang.identity.identityservicev4mono.access.application.exception.ApplicationDisabledException;
@@ -9,83 +8,66 @@ import com.hanyang.identity.identityservicev4mono.access.application.exception.R
 import com.hanyang.identity.identityservicev4mono.access.application.exception.RoleNotFoundException;
 import com.hanyang.identity.identityservicev4mono.access.application.provisioning.RoleProvisioningService;
 import com.hanyang.identity.identityservicev4mono.access.domain.*;
+import com.hanyang.identity.identityservicev4mono.security.authorization.IdentityAdminAccess;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+@IdentityAdminAccess
 @Service
 @RequiredArgsConstructor
 public class RoleCommandService {
 
-    private final RoleRepository roleRepository;
-    private final ApplicationRepository applicationRepository;
-    private final RoleProvisioningService provisioningService;
+  private final RoleRepository roleRepository;
+  private final ApplicationRepository applicationRepository;
+  private final RoleProvisioningService provisioningService;
 
-    @Transactional
-    public Role create(CreateRoleCommand command) {
-        Application application = applicationRepository
-                .findById(command.applicationId())
-                .orElseThrow(() ->
-                        new ApplicationNotFoundException(
-                                command.applicationId()
-                        )
-                );
+  @Transactional
+  public Role create(CreateRoleCommand command) {
+    Application application =
+        applicationRepository
+            .findById(command.applicationId())
+            .orElseThrow(() -> new ApplicationNotFoundException(command.applicationId()));
 
-        if (application.getStatus() != ApplicationStatus.ACTIVE) {
-            throw new ApplicationDisabledException(
-                    command.applicationId()
-            );
-        }
-
-        Role role = Role.create(
-                RoleId.newId(),
-                command.applicationId(),
-                command.code(),
-                command.name()
-        );
-
-        if (roleRepository.existsByApplicationIdAndCode(
-                role.getApplicationId(),
-                role.getCode()
-        )) {
-            throw new RoleCodeAlreadyExistsException(
-                    role.getApplicationId(),
-                    role.getCode()
-            );
-        }
-
-        Role saved = roleRepository.save(role);
-        provisioningService.requestSynchronization(saved.getId());
-
-        return saved;
+    if (application.getStatus() != ApplicationStatus.ACTIVE) {
+      throw new ApplicationDisabledException(command.applicationId());
     }
 
-    @Transactional
-    public Role update(UpdateRoleCommand command) {
-        Role role = roleRepository
-                .findById(command.roleId())
-                .orElseThrow(() ->
-                        new RoleNotFoundException(command.roleId())
-                );
+    Role role =
+        Role.create(RoleId.newId(), command.applicationId(), command.code(), command.name());
 
-        role.rename(command.name());
-
-        Role saved = roleRepository.save(role);
-        provisioningService.requestSynchronization(saved.getId());
-
-        return saved;
+    if (roleRepository.existsByApplicationIdAndCode(role.getApplicationId(), role.getCode())) {
+      throw new RoleCodeAlreadyExistsException(role.getApplicationId(), role.getCode());
     }
 
-    @Transactional
-    public void disable(RoleId roleId) {
-        Role role = roleRepository
-                .findById(roleId)
-                .orElseThrow(() ->
-                        new RoleNotFoundException(roleId)
-                );
+    Role saved = roleRepository.save(role);
+    provisioningService.requestSynchronization(saved.getId());
 
-        role.disable();
-        Role saved = roleRepository.save(role);
-        provisioningService.requestSynchronization(saved.getId());
-    }
+    return saved;
+  }
+
+  @Transactional
+  public Role update(UpdateRoleCommand command) {
+    Role role =
+        roleRepository
+            .findById(command.roleId())
+            .orElseThrow(() -> new RoleNotFoundException(command.roleId()));
+
+    role.rename(command.name());
+
+    Role saved = roleRepository.save(role);
+    provisioningService.requestSynchronization(saved.getId());
+
+    return saved;
+  }
+
+  @Transactional
+  public void disable(RoleId roleId) {
+    Role role =
+        roleRepository.findById(roleId).orElseThrow(() -> new RoleNotFoundException(roleId));
+
+    role.disable();
+    Role saved = roleRepository.save(role);
+    provisioningService.requestSynchronization(saved.getId());
+  }
 }

@@ -4,6 +4,7 @@ import com.hanyang.identity.identityservicev4mono.account.application.port.Ident
 import com.hanyang.identity.identityservicev4mono.infrastructure.keycloak.config.KeycloakProperties;
 import com.hanyang.identity.identityservicev4mono.infrastructure.keycloak.exception.KeycloakIntegrationException;
 import com.hanyang.identity.identityservicev4mono.infrastructure.keycloak.exception.KeycloakUserConflictException;
+import com.hanyang.identity.identityservicev4mono.infrastructure.keycloak.federation.KeycloakLdapFederationManager;
 import jakarta.ws.rs.NotFoundException;
 import jakarta.ws.rs.ProcessingException;
 import jakarta.ws.rs.WebApplicationException;
@@ -24,11 +25,9 @@ import java.util.Objects;
 public class KeycloakAccountAdapter
         implements IdentityProviderAccountPort {
 
-    private static final int HTTP_CREATED = 201;
-    private static final int HTTP_CONFLICT = 409;
-
     private final Keycloak keycloakAdminClient;
     private final KeycloakProperties properties;
+    private final KeycloakLdapFederationManager federationManager;
 
     @Override
     public ProvisionedAccount ensureAccount(
@@ -40,31 +39,23 @@ public class KeycloakAccountAdapter
         String normalizedExternalId = normalizeNullable(externalId);
 
         try {
-            UserRepresentation user = resolveExisting(
+            String federationProviderId = federationManager.requireProviderId();
+            UserRepresentation user = requireFederatedUser(
                     normalizedUsername,
-                    normalizedExternalId
+                    normalizedExternalId,
+                    federationProviderId
             );
-
-            if (user == null) {
-                user = createUser(normalizedUsername, enabled);
-            }
 
             UserResource userResource = users().get(
                     requireText(user.getId(), "Keycloak user id")
             );
             user = userResource.toRepresentation();
+            requireExpectedFederation(user, federationProviderId, normalizedUsername);
 
-            boolean changed = false;
-            if (!Objects.equals(user.getUsername(), normalizedUsername)) {
-                user.setUsername(normalizedUsername);
-                changed = true;
-            }
+            // Username is directory-owned. Do not attempt to rename a
+            // federated LDAP identity from Keycloak.
             if (!Objects.equals(user.isEnabled(), enabled)) {
                 user.setEnabled(enabled);
-                changed = true;
-            }
-
-            if (changed) {
                 userResource.update(user);
             }
 
@@ -72,8 +63,6 @@ public class KeycloakAccountAdapter
                     requireText(user.getId(), "Keycloak user id"),
                     normalizedUsername
             );
-        } catch (KeycloakUserConflictException exception) {
-            throw exception;
         } catch (ProcessingException exception) {
             throw new KeycloakIntegrationException(
                     "Unable to connect to Keycloak Admin API",
@@ -81,7 +70,7 @@ public class KeycloakAccountAdapter
             );
         } catch (WebApplicationException exception) {
             throw new KeycloakIntegrationException(
-                    "Unable to synchronize Keycloak user. HTTP "
+                    "Unable to synchronize federated Keycloak user. HTTP "
                             + exception.getResponse().getStatus(),
                     exception
             );
@@ -90,7 +79,7 @@ public class KeycloakAccountAdapter
                 throw integrationException;
             }
             throw new KeycloakIntegrationException(
-                    "Unable to synchronize Keycloak user",
+                    "Unable to synchronize federated Keycloak user",
                     exception
             );
         }
@@ -105,11 +94,17 @@ public class KeycloakAccountAdapter
         String normalizedExternalId = normalizeNullable(externalId);
 
         try {
-            UserRepresentation user = resolveExisting(
+            String federationProviderId = federationManager.requireProviderId();
+            UserRepresentation user = resolveFederatedUser(
                     normalizedUsername,
-                    normalizedExternalId
+                    normalizedExternalId,
+                    federationProviderId,
+                    false
             );
 
+            // A PENDING/DISABLED account may have never been imported into
+            // Keycloak. Directory lock is already authoritative for bind
+            // denial, so absence in Keycloak is safe and idempotent here.
             if (user == null) {
                 return new ProvisionedAccount(null, normalizedUsername);
             }
@@ -118,20 +113,19 @@ public class KeycloakAccountAdapter
                     requireText(user.getId(), "Keycloak user id")
             );
             user = userResource.toRepresentation();
+            requireExpectedFederation(user, federationProviderId, normalizedUsername);
 
-            boolean changed = false;
-            if (!Objects.equals(user.getUsername(), normalizedUsername)) {
-                user.setUsername(normalizedUsername);
-                changed = true;
-            }
             if (!Boolean.FALSE.equals(user.isEnabled())) {
                 user.setEnabled(false);
-                changed = true;
-            }
-
-            if (changed) {
                 userResource.update(user);
             }
+
+            // Disabling future authentication is not enough: the user may
+            // already own active SSO/refresh sessions. Keycloak's per-user
+            // logout endpoint removes those sessions and notifies clients
+            // with admin URLs so the DISABLED business state is enforced
+            // against already-authenticated users as well.
+            userResource.logout();
 
             return new ProvisionedAccount(
                     requireText(user.getId(), "Keycloak user id"),
@@ -144,7 +138,7 @@ public class KeycloakAccountAdapter
             );
         } catch (WebApplicationException exception) {
             throw new KeycloakIntegrationException(
-                    "Unable to disable Keycloak user. HTTP "
+                    "Unable to disable federated Keycloak user. HTTP "
                             + exception.getResponse().getStatus(),
                     exception
             );
@@ -153,60 +147,102 @@ public class KeycloakAccountAdapter
                 throw integrationException;
             }
             throw new KeycloakIntegrationException(
-                    "Unable to disable Keycloak user",
+                    "Unable to disable federated Keycloak user",
                     exception
             );
         }
     }
 
-    private UserRepresentation resolveExisting(
+    private UserRepresentation requireFederatedUser(
             String username,
-            String externalId
+            String externalId,
+            String federationProviderId
+    ) {
+        UserRepresentation user = resolveFederatedUser(
+                username,
+                externalId,
+                federationProviderId,
+                true
+        );
+        if (user == null) {
+            throw new KeycloakIntegrationException(
+                    "Federated Keycloak user not found for username: " + username
+                            + ". Ensure 389 DS directory provisioning is SYNCED before Keycloak reconciliation."
+            );
+        }
+        return user;
+    }
+
+    private UserRepresentation resolveFederatedUser(
+            String username,
+            String externalId,
+            String federationProviderId,
+            boolean failOnLocalConflict
     ) {
         if (externalId != null) {
             try {
-                return users().get(externalId).toRepresentation();
+                UserRepresentation byId = users().get(externalId).toRepresentation();
+                if (belongsToFederation(byId, federationProviderId)) {
+                    return byId;
+                }
+                // A legacy local Keycloak id from the pre-LDAP architecture
+                // must not be treated as the new external binding.
             } catch (NotFoundException ignored) {
-                // The IdP may have been restored and generated new internal identifiers.
-                // Fall back to the stable username and repair the binding on success.
+                // Keycloak may have been restored and generated new internal
+                // ids. Fall back to stable username and repair the binding.
             }
         }
 
-        List<UserRepresentation> users = users().searchByUsername(username, true);
-        return users.isEmpty() ? null : users.getFirst();
-    }
+        List<UserRepresentation> matches = users().searchByUsername(username, true);
+        if (matches == null || matches.isEmpty()) {
+            return null;
+        }
 
-    private UserRepresentation createUser(
-            String username,
-            boolean enabled
-    ) {
-        UserRepresentation user = new UserRepresentation();
-        user.setUsername(username);
-        user.setEnabled(enabled);
+        UserRepresentation federated = matches.stream()
+                .filter(user -> Objects.equals(user.getUsername(), username))
+                .filter(user -> belongsToFederation(user, federationProviderId))
+                .findFirst()
+                .orElse(null);
+        if (federated != null) {
+            return federated;
+        }
 
-        try (Response response = users().create(user)) {
-            int status = response.getStatus();
+        boolean localConflict = matches.stream()
+                .filter(user -> Objects.equals(user.getUsername(), username))
+                .anyMatch(user -> normalizeNullable(user.getFederationLink()) == null);
 
-            if (status == HTTP_CREATED) {
-                String userId = requireText(
-                        CreatedResponseUtil.getCreatedId(response),
-                        "Keycloak user id"
-                );
-                return users().get(userId).toRepresentation();
-            }
-
-            if (status == HTTP_CONFLICT) {
-                UserRepresentation existing = resolveExisting(username, null);
-                if (existing != null) {
-                    return existing;
-                }
-                throw new KeycloakUserConflictException(username);
-            }
-
+        if (localConflict && failOnLocalConflict) {
             throw new KeycloakIntegrationException(
-                    "Unable to create Keycloak user. HTTP " + status
+                    "Legacy local Keycloak user conflicts with LDAP-federated username: "
+                            + username
+                            + ". Migrate or remove the local user before federation can bind this account."
             );
         }
+
+        return null;
+    }
+
+    private static void requireExpectedFederation(
+            UserRepresentation user,
+            String federationProviderId,
+            String username
+    ) {
+        if (!belongsToFederation(user, federationProviderId)) {
+            throw new KeycloakIntegrationException(
+                    "Keycloak user is not linked to the configured LDAP federation: " + username
+            );
+        }
+    }
+
+    private static boolean belongsToFederation(
+            UserRepresentation user,
+            String federationProviderId
+    ) {
+        return user != null
+                && Objects.equals(
+                normalizeNullable(user.getFederationLink()),
+                federationProviderId
+        );
     }
 
     private UsersResource users() {

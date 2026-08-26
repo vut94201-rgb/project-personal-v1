@@ -2,14 +2,16 @@ package com.hanyang.identity.identityservicev4mono.shared.exception;
 
 
 import com.hanyang.identity.identityservicev4mono.access.application.exception.*;
-import com.hanyang.identity.identityservicev4mono.account.application.exception.AccountNotFoundException;
-import com.hanyang.identity.identityservicev4mono.account.application.exception.AccountProvisioningNotAllowedException;
-import com.hanyang.identity.identityservicev4mono.account.application.exception.EmployeeAlreadyHasAccountException;
-import com.hanyang.identity.identityservicev4mono.account.application.exception.UsernameAlreadyExistsException;
+import com.hanyang.identity.identityservicev4mono.account.application.exception.*;
 import com.hanyang.identity.identityservicev4mono.employee.application.exception.EmployeeCodeAlreadyExistsException;
+import com.hanyang.identity.identityservicev4mono.employee.application.exception.EmployeeEmailAlreadyExistsException;
 import com.hanyang.identity.identityservicev4mono.employee.application.exception.EmployeeNotFoundException;
+import com.hanyang.identity.identityservicev4mono.employee.application.exception.EmployeeProfileNotFoundException;
 import com.hanyang.identity.identityservicev4mono.infrastructure.keycloak.exception.KeycloakIntegrationException;
 import com.hanyang.identity.identityservicev4mono.infrastructure.keycloak.exception.KeycloakUserConflictException;
+import com.hanyang.identity.identityservicev4mono.organization.application.exception.*;
+import com.hanyang.identity.identityservicev4mono.shared.outbox.exception.OutboxEventNotFoundException;
+import com.hanyang.identity.identityservicev4mono.shared.outbox.exception.OutboxEventRetryNotAllowedException;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -57,7 +59,162 @@ public class GlobalExceptionHandler {
         );
     }
 
+    @ExceptionHandler(EmployeeProfileNotFoundException.class)
+    public ResponseEntity<ApiErrorResponse> handleEmployeeProfileNotFound(
+            EmployeeProfileNotFoundException exception,
+            HttpServletRequest request
+    ) {
+        return build(
+                HttpStatus.NOT_FOUND,
+                "EMPLOYEE_PROFILE_NOT_FOUND",
+                exception.getMessage(),
+                request.getRequestURI(),
+                Map.of()
+        );
+    }
 
+    @ExceptionHandler(EmployeeEmailAlreadyExistsException.class)
+    public ResponseEntity<ApiErrorResponse> handleEmployeeEmailAlreadyExists(
+            EmployeeEmailAlreadyExistsException exception,
+            HttpServletRequest request
+    ) {
+        return build(
+                HttpStatus.CONFLICT,
+                "EMPLOYEE_EMAIL_ALREADY_EXISTS",
+                exception.getMessage(),
+                request.getRequestURI(),
+                Map.of()
+        );
+    }
+
+
+
+
+    @ExceptionHandler(DepartmentNotFoundException.class)
+    public ResponseEntity<ApiErrorResponse> handleDepartmentNotFound(
+            DepartmentNotFoundException exception,
+            HttpServletRequest request
+    ) {
+        return build(HttpStatus.NOT_FOUND, "DEPARTMENT_NOT_FOUND", exception.getMessage(),
+                request.getRequestURI(), Map.of());
+    }
+
+    @ExceptionHandler(DepartmentCodeAlreadyExistsException.class)
+    public ResponseEntity<ApiErrorResponse> handleDepartmentCodeAlreadyExists(
+            DepartmentCodeAlreadyExistsException exception,
+            HttpServletRequest request
+    ) {
+        return build(HttpStatus.CONFLICT, "DEPARTMENT_CODE_ALREADY_EXISTS", exception.getMessage(),
+                request.getRequestURI(), Map.of());
+    }
+
+    @ExceptionHandler(DepartmentHasActiveAssignmentsException.class)
+    public ResponseEntity<ApiErrorResponse> handleDepartmentHasActiveAssignments(
+            DepartmentHasActiveAssignmentsException exception,
+            HttpServletRequest request
+    ) {
+        return build(HttpStatus.CONFLICT, "DEPARTMENT_HAS_ACTIVE_ASSIGNMENTS", exception.getMessage(),
+                request.getRequestURI(), Map.of());
+    }
+
+    @ExceptionHandler(DepartmentHasActiveCrewsException.class)
+    public ResponseEntity<ApiErrorResponse> handleDepartmentHasActiveCrews(
+            DepartmentHasActiveCrewsException exception,
+            HttpServletRequest request
+    ) {
+        return build(HttpStatus.CONFLICT, "DEPARTMENT_HAS_ACTIVE_CREWS", exception.getMessage(),
+                request.getRequestURI(), Map.of());
+    }
+
+    @ExceptionHandler(CrewNotFoundException.class)
+    public ResponseEntity<ApiErrorResponse> handleCrewNotFound(
+            CrewNotFoundException exception,
+            HttpServletRequest request
+    ) {
+        return build(HttpStatus.NOT_FOUND, "CREW_NOT_FOUND", exception.getMessage(),
+                request.getRequestURI(), Map.of());
+    }
+
+    @ExceptionHandler(CrewCodeAlreadyExistsException.class)
+    public ResponseEntity<ApiErrorResponse> handleCrewCodeAlreadyExists(
+            CrewCodeAlreadyExistsException exception,
+            HttpServletRequest request
+    ) {
+        return build(HttpStatus.CONFLICT, "CREW_CODE_ALREADY_EXISTS", exception.getMessage(),
+                request.getRequestURI(), Map.of());
+    }
+
+    @ExceptionHandler(CrewHasActiveAssignmentsException.class)
+    public ResponseEntity<ApiErrorResponse> handleCrewHasActiveAssignments(
+            CrewHasActiveAssignmentsException exception,
+            HttpServletRequest request
+    ) {
+        return build(HttpStatus.CONFLICT, "CREW_HAS_ACTIVE_ASSIGNMENTS", exception.getMessage(),
+                request.getRequestURI(), Map.of());
+    }
+
+    @ExceptionHandler(CrewDepartmentMismatchException.class)
+    public ResponseEntity<ApiErrorResponse> handleCrewDepartmentMismatch(
+            CrewDepartmentMismatchException exception,
+            HttpServletRequest request
+    ) {
+        return build(HttpStatus.CONFLICT, "CREW_DEPARTMENT_MISMATCH", exception.getMessage(),
+                request.getRequestURI(), Map.of());
+    }
+
+    @ExceptionHandler(PositionNotFoundException.class)
+    public ResponseEntity<ApiErrorResponse> handlePositionNotFound(
+            PositionNotFoundException exception,
+            HttpServletRequest request
+    ) {
+        return build(HttpStatus.NOT_FOUND, "POSITION_NOT_FOUND", exception.getMessage(),
+                request.getRequestURI(), Map.of());
+    }
+
+    @ExceptionHandler(PositionCodeAlreadyExistsException.class)
+    public ResponseEntity<ApiErrorResponse> handlePositionCodeAlreadyExists(
+            PositionCodeAlreadyExistsException exception,
+            HttpServletRequest request
+    ) {
+        return build(HttpStatus.CONFLICT, "POSITION_CODE_ALREADY_EXISTS", exception.getMessage(),
+                request.getRequestURI(), Map.of());
+    }
+
+    @ExceptionHandler(PositionHasActiveAssignmentsException.class)
+    public ResponseEntity<ApiErrorResponse> handlePositionHasActiveAssignments(
+            PositionHasActiveAssignmentsException exception,
+            HttpServletRequest request
+    ) {
+        return build(HttpStatus.CONFLICT, "POSITION_HAS_ACTIVE_ASSIGNMENTS", exception.getMessage(),
+                request.getRequestURI(), Map.of());
+    }
+
+    @ExceptionHandler(OrganizationalAssignmentNotFoundException.class)
+    public ResponseEntity<ApiErrorResponse> handleOrganizationalAssignmentNotFound(
+            OrganizationalAssignmentNotFoundException exception,
+            HttpServletRequest request
+    ) {
+        return build(HttpStatus.NOT_FOUND, "ORGANIZATIONAL_ASSIGNMENT_NOT_FOUND", exception.getMessage(),
+                request.getRequestURI(), Map.of());
+    }
+
+    @ExceptionHandler(EmployeeAlreadyHasActiveOrganizationalAssignmentException.class)
+    public ResponseEntity<ApiErrorResponse> handleEmployeeAlreadyHasActiveOrganizationalAssignment(
+            EmployeeAlreadyHasActiveOrganizationalAssignmentException exception,
+            HttpServletRequest request
+    ) {
+        return build(HttpStatus.CONFLICT, "EMPLOYEE_ALREADY_HAS_ACTIVE_ORGANIZATIONAL_ASSIGNMENT",
+                exception.getMessage(), request.getRequestURI(), Map.of());
+    }
+
+    @ExceptionHandler(OrganizationReferenceDisabledException.class)
+    public ResponseEntity<ApiErrorResponse> handleOrganizationReferenceDisabled(
+            OrganizationReferenceDisabledException exception,
+            HttpServletRequest request
+    ) {
+        return build(HttpStatus.CONFLICT, "ORGANIZATION_REFERENCE_DISABLED", exception.getMessage(),
+                request.getRequestURI(), Map.of());
+    }
 
     @ExceptionHandler(AccountNotFoundException.class)
     public ResponseEntity<ApiErrorResponse> handleAccountNotFound(
@@ -333,6 +490,62 @@ public class GlobalExceptionHandler {
         return build(
                 HttpStatus.CONFLICT,
                 "ACCOUNT_PROVISIONING_NOT_ALLOWED",
+                exception.getMessage(),
+                request.getRequestURI(),
+                Map.of()
+        );
+    }
+
+    @ExceptionHandler(AccountCredentialOnboardingNotAllowedException.class)
+    public ResponseEntity<ApiErrorResponse> handleAccountCredentialOnboardingNotAllowed(
+            AccountCredentialOnboardingNotAllowedException exception,
+            HttpServletRequest request
+    ) {
+        return build(
+                HttpStatus.CONFLICT,
+                "ACCOUNT_CREDENTIAL_ONBOARDING_NOT_ALLOWED",
+                exception.getMessage(),
+                request.getRequestURI(),
+                Map.of()
+        );
+    }
+
+    @ExceptionHandler(AccountCredentialEmailUnavailableException.class)
+    public ResponseEntity<ApiErrorResponse> handleAccountCredentialEmailUnavailable(
+            AccountCredentialEmailUnavailableException exception,
+            HttpServletRequest request
+    ) {
+        return build(
+                HttpStatus.CONFLICT,
+                "ACCOUNT_CREDENTIAL_EMAIL_UNAVAILABLE",
+                exception.getMessage(),
+                request.getRequestURI(),
+                Map.of()
+        );
+    }
+
+    @ExceptionHandler(OutboxEventNotFoundException.class)
+    public ResponseEntity<ApiErrorResponse> handleOutboxEventNotFound(
+            OutboxEventNotFoundException exception,
+            HttpServletRequest request
+    ) {
+        return build(
+                HttpStatus.NOT_FOUND,
+                "OUTBOX_EVENT_NOT_FOUND",
+                exception.getMessage(),
+                request.getRequestURI(),
+                Map.of()
+        );
+    }
+
+    @ExceptionHandler(OutboxEventRetryNotAllowedException.class)
+    public ResponseEntity<ApiErrorResponse> handleOutboxEventRetryNotAllowed(
+            OutboxEventRetryNotAllowedException exception,
+            HttpServletRequest request
+    ) {
+        return build(
+                HttpStatus.CONFLICT,
+                "OUTBOX_EVENT_RETRY_NOT_ALLOWED",
                 exception.getMessage(),
                 request.getRequestURI(),
                 Map.of()

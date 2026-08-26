@@ -23,6 +23,8 @@ public class AccountRepositoryAdapter
         return jpaRepository.findById(account.getId().value())
                 .map(existing -> {
                     mapper.updateEntity(account, existing);
+                    AccountJpaEntity saved =
+                            jpaRepository.save(existing);
                     return mapper.toDomain(existing);
                 })
                 .orElseGet(() -> {

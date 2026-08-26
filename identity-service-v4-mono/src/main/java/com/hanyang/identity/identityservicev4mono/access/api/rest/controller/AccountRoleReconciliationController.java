@@ -6,6 +6,7 @@ import com.hanyang.identity.identityservicev4mono.access.application.provisionin
 import com.hanyang.identity.identityservicev4mono.access.application.provisioning.AccountRoleReconciliationResult;
 import com.hanyang.identity.identityservicev4mono.access.domain.RoleId;
 import com.hanyang.identity.identityservicev4mono.account.domain.AccountId;
+import com.hanyang.identity.identityservicev4mono.security.authorization.IdentityAdminAccess;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -17,7 +18,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/internal/v1/identity-provider/account-roles")
-@RequiredArgsConstructor
+@RequiredArgsConstructor@IdentityAdminAccess
 public class AccountRoleReconciliationController {
 
     private final AccountRoleProvisioningService provisioningService;

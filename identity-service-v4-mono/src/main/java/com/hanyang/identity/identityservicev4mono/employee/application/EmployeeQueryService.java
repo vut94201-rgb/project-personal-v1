@@ -5,6 +5,7 @@ import com.hanyang.identity.identityservicev4mono.employee.domain.Employee;
 import com.hanyang.identity.identityservicev4mono.employee.domain.EmployeeId;
 import com.hanyang.identity.identityservicev4mono.employee.domain.EmployeeRepository;
 import com.hanyang.identity.identityservicev4mono.employee.domain.EmployeeStatus;
+import com.hanyang.identity.identityservicev4mono.security.authorization.IdentityReadAccess;
 import jakarta.annotation.Nullable;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -17,6 +18,7 @@ import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
+//@IdentityReadAccess
 @Transactional(readOnly = true)
 public class EmployeeQueryService {
 

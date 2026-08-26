@@ -6,6 +6,7 @@ import com.hanyang.identity.identityservicev4mono.account.api.rest.response.Acco
 import com.hanyang.identity.identityservicev4mono.account.application.provisioning.AccountProvisioningService;
 import com.hanyang.identity.identityservicev4mono.account.application.provisioning.AccountReconciliationResult;
 import com.hanyang.identity.identityservicev4mono.account.domain.AccountId;
+import com.hanyang.identity.identityservicev4mono.security.authorization.IdentityAdminAccess;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -18,6 +19,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/internal/v1/identity-provider/accounts")
 @RequiredArgsConstructor
+@IdentityAdminAccess
 public class AccountReconciliationController {
 
     private final AccountProvisioningService provisioningService;

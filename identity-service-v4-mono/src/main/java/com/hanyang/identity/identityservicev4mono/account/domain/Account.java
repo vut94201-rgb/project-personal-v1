@@ -61,21 +61,40 @@ public class Account {
     }
 
     /**
-     * Links the account to the external identity and activates it.
+     * Links this business account to the current Keycloak identity.
      *
-     * <p>The operation is idempotent for an already active account so a
-     * reconciliation run can repair an external identifier after an IdP
-     * restore without creating a second business account.</p>
+     * <p>Linking an external identity is deliberately independent from the
+     * account lifecycle. A successful provider reconciliation must not, by
+     * itself, mean that authentication is allowed.</p>
      */
-    public void provision(String keycloakSubject) {
+    public void linkKeycloakSubject(String keycloakSubject) {
+        this.keycloakSubject = requireText(keycloakSubject, "keycloakSubject");
+    }
+
+    /**
+     * Activates a provisioned account.
+     *
+     * <p>Only ACTIVE accounts are allowed to authenticate. A Keycloak subject
+     * must already be linked before activation. DISABLED is terminal in the
+     * current lifecycle and therefore cannot be reactivated through this
+     * method.</p>
+     */
+    public void activate() {
+        if (status == AccountStatus.ACTIVE) {
+            return;
+        }
+
         if (status == AccountStatus.DISABLED) {
             throw new IllegalStateException(
-                    "Disabled account cannot be provisioned"
+                    "Disabled account cannot be activated"
             );
         }
 
-        this.keycloakSubject =
-                requireText(keycloakSubject, "keycloakSubject");
+        if (keycloakSubject == null || keycloakSubject.isBlank()) {
+            throw new IllegalStateException(
+                    "Account cannot be activated before Keycloak identity is linked"
+            );
+        }
 
         this.status = AccountStatus.ACTIVE;
     }

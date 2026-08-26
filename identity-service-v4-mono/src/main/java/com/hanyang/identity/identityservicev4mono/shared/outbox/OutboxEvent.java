@@ -4,30 +4,31 @@ import java.util.Objects;
 import java.util.UUID;
 
 public record OutboxEvent(
-        UUID id,
-        String aggregateType,
-        String aggregateId,
-        String eventType,
-        String payload,
-        int attemptCount
-) {
-    public OutboxEvent {
-            Objects.requireNonNull(id, "id must not be null");
-                aggregateType = requireText(aggregateType, "aggregateType");        aggregateId = requireText(aggregateId, "aggregateId");
-                eventType = requireText(eventType, "eventType");
+    UUID id,
+    String aggregateType,
+    String aggregateId,
+    String eventType,
+    String payload,
+    int attemptCount) {
 
-                        if (attemptCount < 1) {
-                        throw new IllegalArgumentException("attemptCount must be at least 1 for a claimed event");
-                   }
-            }
+  public OutboxEvent {
+    Objects.requireNonNull(id, "id must not be null");
+    aggregateType = requireText(aggregateType, "aggregateType");
+    aggregateId = requireText(aggregateId, "aggregateId");
+    eventType = requireText(eventType, "eventType");
 
-            private static String requireText(String value, String fieldName) {
-                Objects.requireNonNull(value, fieldName + " must not be null");
+    if (attemptCount < 1) {
+      throw new IllegalArgumentException("attemptCount must be at least 1 for a claimed event");
+    }
+  }
 
-                String normalized = value.trim();
-               if (normalized.isEmpty()) {
-                        throw new IllegalArgumentException(fieldName + " must not be blank");
-                    }
-                return normalized;
-           }
+  private static String requireText(String value, String fieldName) {
+    Objects.requireNonNull(value, fieldName + " must not be null");
+
+    String normalized = value.trim();
+    if (normalized.isEmpty()) {
+      throw new IllegalArgumentException(fieldName + " must not be blank");
+    }
+    return normalized;
+  }
 }

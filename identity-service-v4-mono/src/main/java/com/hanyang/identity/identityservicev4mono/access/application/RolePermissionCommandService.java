@@ -3,11 +3,13 @@ package com.hanyang.identity.identityservicev4mono.access.application;
 
 import com.hanyang.identity.identityservicev4mono.access.application.exception.*;
 import com.hanyang.identity.identityservicev4mono.access.domain.*;
+import com.hanyang.identity.identityservicev4mono.security.authorization.IdentityAdminAccess;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
+@IdentityAdminAccess
 @RequiredArgsConstructor
 public class RolePermissionCommandService {
 

@@ -2,9 +2,13 @@ package com.hanyang.identity.identityservicev4mono.shared.outbox.persistence;
 
 
 import com.hanyang.identity.identityservicev4mono.shared.outbox.OutboxEvent;
+import com.hanyang.identity.identityservicev4mono.shared.outbox.OutboxEventSnapshot;
 import com.hanyang.identity.identityservicev4mono.shared.outbox.OutboxEventStatus;
 import com.hanyang.identity.identityservicev4mono.shared.outbox.OutboxWorkerProperties;
+import com.hanyang.identity.identityservicev4mono.shared.outbox.exception.OutboxEventNotFoundException;
+import com.hanyang.identity.identityservicev4mono.shared.outbox.exception.OutboxEventRetryNotAllowedException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,7 +29,7 @@ public class OutboxEventStore {
     private final OutboxEventJpaRepository jpaRepository;
     private final OutboxWorkerProperties properties;
     private final Clock clock;
-
+    // Add new event
     @Transactional(propagation = Propagation.MANDATORY)
     public UUID append(
             String aggregateType,
@@ -50,7 +54,7 @@ public class OutboxEventStore {
 
         return jpaRepository.save(entity).getId();
     }
-
+    // make processing
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public List<OutboxEvent> claimBatch() {
         Instant now = clock.instant();
@@ -88,11 +92,11 @@ public class OutboxEventStore {
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public void markProcessed(UUID eventId) {
+    public boolean markProcessed(UUID eventId, int claimedAttemptCount) {
         OutboxEventJpaEntity entity = requiredEntity(eventId);
 
-        if (entity.getStatus() != OutboxEventStatus.PROCESSING) {
-            return;
+        if (!isCurrentProcessingAttempt(entity, claimedAttemptCount)) {
+            return false;
         }
 
         entity.setStatus(OutboxEventStatus.PROCESSED);
@@ -100,14 +104,50 @@ public class OutboxEventStore {
         entity.setProcessingStartedAt(null);
         entity.setLastError(null);
         jpaRepository.save(entity);
+        return true;
+    }
+
+    @Transactional(readOnly = true)
+    public List<OutboxEventSnapshot> findDeadEvents(int limit) {
+        if (limit < 1 || limit > 500) {
+            throw new IllegalArgumentException("limit must be between 1 and 500");
+        }
+
+        return jpaRepository.findByStatusOrderByUpdatedAtDesc(
+                        OutboxEventStatus.DEAD,
+                        PageRequest.of(0, limit)
+                ).stream()
+                .map(this::toSnapshot)
+                .toList();
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public void markFailed(UUID eventId, String error) {
+    public OutboxEventSnapshot retryDead(UUID eventId) {
+        OutboxEventJpaEntity entity = jpaRepository.lockById(eventId)
+                .orElseThrow(() -> new OutboxEventNotFoundException(eventId));
+
+        if (entity.getStatus() != OutboxEventStatus.DEAD) {
+            throw new OutboxEventRetryNotAllowedException(
+                    eventId,
+                    entity.getStatus()
+            );
+        }
+
+        entity.setStatus(OutboxEventStatus.PENDING);
+        entity.setAttemptCount(0);
+        entity.setAvailableAt(clock.instant());
+        entity.setProcessingStartedAt(null);
+        entity.setProcessedAt(null);
+
+        return toSnapshot(jpaRepository.save(entity));
+    }
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public boolean markFailed(UUID eventId, int claimedAttemptCount, String error) {
         OutboxEventJpaEntity entity = requiredEntity(eventId);
 
-        if (entity.getStatus() != OutboxEventStatus.PROCESSING) {
-            return;
+        if (!isCurrentProcessingAttempt(entity, claimedAttemptCount)) {
+            return false;
         }
 
         String normalizedError = normalizeError(error);
@@ -117,7 +157,7 @@ public class OutboxEventStore {
         if (entity.getAttemptCount() >= properties.getMaxAttempts()) {
             entity.setStatus(OutboxEventStatus.DEAD);
             jpaRepository.save(entity);
-            return;
+            return true;
         }
 
         entity.setStatus(OutboxEventStatus.PENDING);
@@ -125,6 +165,15 @@ public class OutboxEventStore {
                 clock.instant().plus(backoffForAttempt(entity.getAttemptCount()))
         );
         jpaRepository.save(entity);
+        return true;
+    }
+
+    private static boolean isCurrentProcessingAttempt(
+            OutboxEventJpaEntity entity,
+            int claimedAttemptCount
+    ) {
+        return entity.getStatus() == OutboxEventStatus.PROCESSING
+                && entity.getAttemptCount() == claimedAttemptCount;
     }
 
     private OutboxEventJpaEntity requiredEntity(UUID eventId) {
@@ -142,6 +191,23 @@ public class OutboxEventStore {
                 entity.getEventType(),
                 entity.getPayload(),
                 entity.getAttemptCount()
+        );
+    }
+
+    private OutboxEventSnapshot toSnapshot(OutboxEventJpaEntity entity) {
+        return new OutboxEventSnapshot(
+                entity.getId(),
+                entity.getAggregateType(),
+                entity.getAggregateId(),
+                entity.getEventType(),
+                entity.getStatus(),
+                entity.getAttemptCount(),
+                entity.getAvailableAt(),
+                entity.getProcessingStartedAt(),
+                entity.getProcessedAt(),
+                entity.getLastError(),
+                entity.getCreatedAt(),
+                entity.getUpdatedAt()
         );
     }
 

@@ -1,6 +1,7 @@
 package com.hanyang.identity.identityservicev4mono.account.application.provisioning;
 
 
+import com.hanyang.identity.identityservicev4mono.account.application.activation.AccountActivationCoordinator;
 import com.hanyang.identity.identityservicev4mono.account.application.port.IdentityProviderAccountPort;
 import com.hanyang.identity.identityservicev4mono.account.domain.Account;
 import com.hanyang.identity.identityservicev4mono.account.domain.AccountId;
@@ -19,14 +20,15 @@ import java.time.Instant;
 @RequiredArgsConstructor
 public class AccountProvisioningService {
 
-    static final String OUTBOX_AGGREGATE_TYPE = "ACCOUNT";
-    static final String OUTBOX_EVENT_TYPE = "ACCOUNT_PROVISIONING_REQUESTED";
+    public static final String OUTBOX_AGGREGATE_TYPE = "ACCOUNT";
+    public static final String OUTBOX_EVENT_TYPE = "ACCOUNT_PROVISIONING_REQUESTED";
 
     private static final IdentityProviderType PROVIDER = IdentityProviderType.KEYCLOAK;
 
     private final AccountRepository accountRepository;
     private final AccountProvisioningStateRepository provisioningStateRepository;
     private final IdentityProviderAccountPort identityProviderAccountPort;
+    private final AccountActivationCoordinator activationCoordinator;
     private final OutboxPublisher outboxPublisher;
     private final Clock clock;
 
@@ -55,8 +57,9 @@ public class AccountProvisioningService {
                 .beginSynchronization(accountId, PROVIDER);
         long synchronizedRevision = syncingState.getDesiredRevision();
 
+        AccountProvisioningState synchronizedState;
         try {
-            boolean attemptedEnabledState = account.getStatus() != AccountStatus.DISABLED;
+            AccountStatus attemptedStatus = account.getStatus();
             IdentityProviderAccountPort.ProvisionedAccount provisionedAccount =
                     synchronizeExternalAccount(account);
 
@@ -65,25 +68,24 @@ public class AccountProvisioningService {
                             "Account disappeared during reconciliation: " + accountId.value()
                     ));
 
-            if (latestAccount.getStatus() != AccountStatus.DISABLED
-                    && provisionedAccount.externalId() != null
-                    && !provisionedAccount.externalId().isBlank()) {
-                latestAccount.provision(provisionedAccount.externalId());
+            if (hasExternalId(provisionedAccount)) {
+                latestAccount.linkKeycloakSubject(provisionedAccount.externalId());
                 accountRepository.save(latestAccount);
-            } else if (attemptedEnabledState
-                    && latestAccount.getStatus() == AccountStatus.DISABLED
-                    && provisionedAccount.externalId() != null
-                    && !provisionedAccount.externalId().isBlank()) {
-                // A disable may have raced with an earlier provisioning attempt.
-                // Compensate immediately so a stale attempt cannot reactivate access.
-                provisionedAccount = identityProviderAccountPort.disableAccount(
-                        latestAccount.getUsername(),
-                        provisionedAccount.externalId()
-                );
+            }
+
+            // Linking the external Keycloak identity no longer activates the
+            // business account. Activation is deliberately deferred until all
+            // mandatory provisioning targets are ready.
+            //
+            // Reconcile only if the effective business state changed while the
+            // remote call was in flight (for example ACTIVE -> DISABLED).
+            if (authenticationAllowed(attemptedStatus)
+                    != authenticationAllowed(latestAccount.getStatus())) {
+                provisionedAccount = synchronizeExternalAccount(latestAccount);
             }
 
             Instant synchronizedAt = clock.instant();
-            AccountProvisioningState synchronizedState = provisioningStateRepository
+            synchronizedState = provisioningStateRepository
                     .completeSynchronization(
                             accountId,
                             PROVIDER,
@@ -92,8 +94,6 @@ public class AccountProvisioningService {
                             provisionedAccount.externalCode(),
                             synchronizedAt
                     );
-
-            return AccountReconciliationResult.fromState(synchronizedState);
         } catch (RuntimeException exception) {
             AccountProvisioningState failedState = provisioningStateRepository
                     .failSynchronization(
@@ -105,6 +105,12 @@ public class AccountProvisioningService {
 
             return AccountReconciliationResult.fromState(failedState);
         }
+
+        // The provider result is already durably SYNCED. Coordination is a
+        // separate step: if it fails, the outbox can retry without corrupting
+        // the successful provider state.
+        activationCoordinator.afterIdentityProviderSynchronization(accountId);
+        return AccountReconciliationResult.fromState(synchronizedState);
     }
 
     private IdentityProviderAccountPort.ProvisionedAccount synchronizeExternalAccount(
@@ -120,8 +126,19 @@ public class AccountProvisioningService {
         return identityProviderAccountPort.ensureAccount(
                 account.getUsername(),
                 account.getKeycloakSubject(),
-                true
+                authenticationAllowed(account.getStatus())
         );
+    }
+
+    private static boolean authenticationAllowed(AccountStatus status) {
+        return status == AccountStatus.ACTIVE;
+    }
+
+    private static boolean hasExternalId(
+            IdentityProviderAccountPort.ProvisionedAccount provisionedAccount
+    ) {
+        return provisionedAccount.externalId() != null
+                && !provisionedAccount.externalId().isBlank();
     }
 
     private static String messageOf(RuntimeException exception) {

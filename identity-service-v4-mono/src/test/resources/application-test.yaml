@@ -1,0 +1,39 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:identity-test;MODE=PostgreSQL;DB_CLOSE_DELAY=-1;DATABASE_TO_LOWER=TRUE
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+
+  flyway:
+    enabled: false
+
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: create-drop
+    properties:
+      hibernate:
+        format_sql: false
+
+  cloud:
+    consul:
+      enabled: false
+      discovery:
+        enabled: false
+        register: false
+
+  batch:
+    jdbc:
+      initialize-schema: never
+
+integration:
+  keycloak:
+    server-url: http://localhost:18080
+    realm: hanyang
+    admin-client-id: identity-service-admin
+    admin-client-secret: test-secret
+
+outbox:
+  worker:
+    enabled: false

@@ -10,10 +10,11 @@ import com.hanyang.identity.identityservicev4mono.account.domain.Account;
 import com.hanyang.identity.identityservicev4mono.account.domain.AccountId;
 import com.hanyang.identity.identityservicev4mono.account.domain.AccountRepository;
 import com.hanyang.identity.identityservicev4mono.account.domain.AccountStatus;
+import com.hanyang.identity.identityservicev4mono.security.authorization.IdentityAdminAccess;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
+@IdentityAdminAccess
 @Service
 @RequiredArgsConstructor
 public class AccountRoleCommandService {

@@ -22,8 +22,8 @@ import java.util.List;
 public class OutboxWorker {
 
     private final OutboxEventStore eventStore;
-    private final
-    List<OutboxEventHandler> handlers;
+    private final List<OutboxEventHandler> handlers;
+    private final OutboxOperationalMetrics metrics;
 
     @Scheduled(fixedDelayString = "${outbox.worker.fixed-delay-ms:1000}")
     public void processAvailableEvents() {
@@ -32,10 +32,14 @@ public class OutboxWorker {
         for (OutboxEvent event : events) {
             try {
                 handlerFor(event).handle(event);
-                eventStore.markProcessed(event.id());
+                if (eventStore.markProcessed(event.id(), event.attemptCount())) {
+                    metrics.recordProcessed();
+                }
             } catch (RuntimeException exception) {
                 String error = messageOf(exception);
-                eventStore.markFailed(event.id(), error);
+                if (eventStore.markFailed(event.id(), event.attemptCount(), error)) {
+                    metrics.recordFailed();
+                }
 
                 log.warn(
                         "Outbox event delivery failed. eventId={}, eventType={}, aggregateType={}, aggregateId={}, attempt={}",

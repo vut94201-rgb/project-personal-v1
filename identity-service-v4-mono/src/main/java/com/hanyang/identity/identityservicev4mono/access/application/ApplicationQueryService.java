@@ -5,6 +5,7 @@ import com.hanyang.identity.identityservicev4mono.access.domain.Application;
 import com.hanyang.identity.identityservicev4mono.access.domain.ApplicationId;
 import com.hanyang.identity.identityservicev4mono.access.domain.ApplicationRepository;
 import com.hanyang.identity.identityservicev4mono.access.domain.ApplicationStatus;
+import com.hanyang.identity.identityservicev4mono.security.authorization.IdentityReadAccess;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -12,6 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.Set;
 
 @Service
+@IdentityReadAccess
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class ApplicationQueryService {

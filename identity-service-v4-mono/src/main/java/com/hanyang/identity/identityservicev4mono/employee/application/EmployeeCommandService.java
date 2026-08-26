@@ -7,12 +7,15 @@ import com.hanyang.identity.identityservicev4mono.employee.application.exception
 import com.hanyang.identity.identityservicev4mono.employee.domain.Employee;
 import com.hanyang.identity.identityservicev4mono.employee.domain.EmployeeId;
 import com.hanyang.identity.identityservicev4mono.employee.domain.EmployeeRepository;
+import com.hanyang.identity.identityservicev4mono.security.authorization.IdentityAdminAccess;
+import com.hanyang.identity.identityservicev4mono.security.authorization.IdentityReadAccess;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor
+@IdentityAdminAccess
 public class EmployeeCommandService {
 
     private final EmployeeRepository employeeRepository;
