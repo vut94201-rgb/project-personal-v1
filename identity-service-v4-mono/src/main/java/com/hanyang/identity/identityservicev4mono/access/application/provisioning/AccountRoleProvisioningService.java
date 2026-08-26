@@ -4,6 +4,9 @@ package com.hanyang.identity.identityservicev4mono.access.application.provisioni
 import com.hanyang.identity.identityservicev4mono.access.application.port.IdentityProviderAccessPort;
 import com.hanyang.identity.identityservicev4mono.access.domain.*;
 import com.hanyang.identity.identityservicev4mono.account.application.provisioning.AccountProvisioningService;
+import com.hanyang.identity.identityservicev4mono.account.application.provisioning.AccountProvisioningState;
+import com.hanyang.identity.identityservicev4mono.account.application.provisioning.AccountProvisioningStateRepository;
+import com.hanyang.identity.identityservicev4mono.account.application.provisioning.AccountProvisioningStatus;
 import com.hanyang.identity.identityservicev4mono.account.domain.Account;
 import com.hanyang.identity.identityservicev4mono.account.domain.AccountId;
 import com.hanyang.identity.identityservicev4mono.account.domain.AccountRepository;
@@ -31,7 +34,7 @@ public class AccountRoleProvisioningService {
     private final ApplicationRepository applicationRepository;
     private final AccountRoleRepository accountRoleRepository;
     private final AccountRoleProvisioningStateRepository provisioningStateRepository;
-    private final AccountProvisioningService accountProvisioningService;
+    private final AccountProvisioningStateRepository accountProvisioningStateRepository;
     private final RoleProvisioningService roleProvisioningService;
     private final RoleProvisioningStateRepository roleProvisioningStateRepository;
     private final IdentityProviderAccessPort identityProviderAccessPort;
@@ -115,19 +118,21 @@ public class AccountRoleProvisioningService {
                     ));
 
             if (desiredAssigned) {
-                account = ensureAccountCanReceiveRole(account);
+                String externalAccountId = requireCurrentExternalAccountId(account);
                 ensureRoleCanBeAssigned(role, application);
 
                 identityProviderAccessPort.assignRole(
-                        account.getKeycloakSubject(),
+                        externalAccountId,
                         application.getCode(),
                         role.getCode()
                 );
-            } else if (hasExternalSubject(account)) {
-                identityProviderAccessPort.revokeRole(
-                        account.getKeycloakSubject(),
-                        application.getCode(),
-                        role.getCode()
+            } else {
+                currentExternalAccountId(account.getId()).ifPresent(externalAccountId ->
+                        identityProviderAccessPort.revokeRole(
+                                externalAccountId,
+                                application.getCode(),
+                                role.getCode()
+                        )
                 );
             }
 
@@ -156,32 +161,32 @@ public class AccountRoleProvisioningService {
         }
     }
 
-    private Account ensureAccountCanReceiveRole(Account account) {
-        if (account.getStatus() == AccountStatus.DISABLED) {
+    private String requireCurrentExternalAccountId(Account account) {
+        if (account.getStatus() != AccountStatus.ACTIVE) {
             throw new IllegalStateException(
-                    "Cannot assign identity-provider role to disabled account: "
+                    "Account must be ACTIVE before identity-provider role assignment: "
                             + account.getId().value()
             );
         }
 
-        if (account.getStatus() != AccountStatus.ACTIVE || !hasExternalSubject(account)) {
-            AccountId accountId = account.getId();
-            accountProvisioningService.reconcile(accountId);
-            account = accountRepository.findById(accountId)
-                    .orElseThrow(() -> new IllegalStateException(
-                            "Account disappeared during provisioning: "
-                                    + accountId.value()
-                    ));
-        }
+        return currentExternalAccountId(account.getId())
+                .orElseThrow(() -> new IllegalStateException(
+                        "Account Keycloak binding is not current before role assignment: "
+                                + account.getId().value()
+                ));
+    }
 
-        if (account.getStatus() != AccountStatus.ACTIVE || !hasExternalSubject(account)) {
-            throw new IllegalStateException(
-                    "Account provisioning did not complete before role assignment: "
-                            + account.getId().value()
-            );
-        }
+    private java.util.Optional<String> currentExternalAccountId(AccountId accountId) {
+        return accountProvisioningStateRepository
+                .findByAccountIdAndProvider(accountId, PROVIDER)
+                .filter(AccountRoleProvisioningService::isCurrentAccountBinding)
+                .map(AccountProvisioningState::getExternalId)
+                .filter(externalId -> externalId != null && !externalId.isBlank());
+    }
 
-        return account;
+    private static boolean isCurrentAccountBinding(AccountProvisioningState state) {
+        return state.getStatus() == AccountProvisioningStatus.SYNCED
+                && state.getDesiredRevision() == state.getSyncedRevision();
     }
 
     private void ensureRoleCanBeAssigned(
@@ -225,11 +230,6 @@ public class AccountRoleProvisioningService {
                         + result.status()
                         : result.error()
         );
-    }
-
-    private static boolean hasExternalSubject(Account account) {
-        return account.getKeycloakSubject() != null
-                && !account.getKeycloakSubject().isBlank();
     }
 
     private static String messageOf(RuntimeException exception) {

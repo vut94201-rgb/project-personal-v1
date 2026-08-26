@@ -17,6 +17,7 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
+
 class KeycloakLdapFederationManagerTest {
 
     @Test
@@ -55,7 +56,8 @@ class KeycloakLdapFederationManagerTest {
                         true,
                         "hanyang-389ds",
                         "ldap://host.containers.internal:3389",
-                        "WRITABLE"
+                        "WRITABLE",
+                        false
                 ),
                 new Ds389Properties(
                         true,
@@ -63,7 +65,8 @@ class KeycloakLdapFederationManagerTest {
                         "dc=hanyang,dc=local",
                         "cn=Directory Manager",
                         "change_me",
-                        "ou=People"
+                        "ou=People",
+                        false
                 )
         );
 

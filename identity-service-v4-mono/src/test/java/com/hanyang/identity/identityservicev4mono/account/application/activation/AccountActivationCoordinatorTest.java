@@ -21,7 +21,9 @@ import java.time.Instant;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.*;
+
 
 class AccountActivationCoordinatorTest {
 
@@ -84,8 +86,6 @@ class AccountActivationCoordinatorTest {
                 EmployeeId.newId(),
                 "emp001"
         );
-        account.linkKeycloakSubject("kc-fed-001");
-
         AccountDirectoryProvisioningState directoryState = synchronizedDirectoryState(
                 account.getId(),
                 Instant.parse("2026-08-26T01:00:00Z")
@@ -155,8 +155,6 @@ class AccountActivationCoordinatorTest {
                 EmployeeId.newId(),
                 "emp001"
         );
-        account.linkKeycloakSubject("kc-fed-001");
-
         AccountDirectoryProvisioningState directoryState = synchronizedDirectoryState(
                 account.getId(),
                 Instant.parse("2026-08-26T02:00:00Z")
@@ -250,6 +248,54 @@ class AccountActivationCoordinatorTest {
                 account.getId(),
                 IdentityProviderType.KEYCLOAK
         );
+        verify(accountRepository, never()).save(any(Account.class));
+    }
+
+
+    @Test
+    void syncedProviderStateWithoutExternalIdDoesNotActivate() {
+        Account account = Account.create(
+                AccountId.newId(),
+                EmployeeId.newId(),
+                "emp001"
+        );
+        AccountDirectoryProvisioningState directoryState = synchronizedDirectoryState(
+                account.getId(),
+                Instant.parse("2026-08-26T05:00:00Z")
+        );
+        AccountProvisioningState providerState = synchronizedProviderState(
+                account.getId(),
+                null,
+                Instant.parse("2026-08-26T05:00:01Z")
+        );
+
+        AccountRepository accountRepository = mock(AccountRepository.class);
+        AccountDirectoryProvisioningStateRepository directoryRepository =
+                mock(AccountDirectoryProvisioningStateRepository.class);
+        AccountProvisioningStateRepository providerRepository =
+                mock(AccountProvisioningStateRepository.class);
+        OutboxPublisher outboxPublisher = mock(OutboxPublisher.class);
+
+        when(accountRepository.findById(account.getId())).thenReturn(Optional.of(account));
+        when(directoryRepository.findByAccountIdAndProvider(
+                account.getId(), DirectoryProviderType.DS389
+        )).thenReturn(Optional.of(directoryState));
+        when(providerRepository.findByAccountIdAndProvider(
+                account.getId(), IdentityProviderType.KEYCLOAK
+        )).thenReturn(Optional.of(providerState));
+
+        AccountActivationCoordinator coordinator = new AccountActivationCoordinator(
+                accountRepository,
+                directoryRepository,
+                providerRepository,
+                outboxPublisher
+        );
+
+        assertThrows(
+                IllegalStateException.class,
+                () -> coordinator.afterIdentityProviderSynchronization(account.getId())
+        );
+        assertEquals(AccountStatus.PENDING, account.getStatus());
         verify(accountRepository, never()).save(any(Account.class));
     }
 

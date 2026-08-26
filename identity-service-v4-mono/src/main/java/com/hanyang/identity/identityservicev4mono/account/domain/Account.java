@@ -10,24 +10,20 @@ public class Account {
 
     private final AccountId id;
     private final EmployeeId employeeId;
-
     private final String username;
 
-    private String keycloakSubject;
     private AccountStatus status;
 
     private Account(
             AccountId id,
             EmployeeId employeeId,
             String username,
-            String keycloakSubject,
             AccountStatus status
     ) {
-        this.id = Objects.requireNonNull(id);
-        this.employeeId = Objects.requireNonNull(employeeId);
+        this.id = Objects.requireNonNull(id, "id must not be null");
+        this.employeeId = Objects.requireNonNull(employeeId, "employeeId must not be null");
         this.username = requireText(username, "username");
-        this.keycloakSubject = normalizeNullable(keycloakSubject);
-        this.status = Objects.requireNonNull(status);
+        this.status = Objects.requireNonNull(status, "status must not be null");
     }
 
     public static Account create(
@@ -39,7 +35,6 @@ public class Account {
                 id,
                 employeeId,
                 username,
-                null,
                 AccountStatus.PENDING
         );
     }
@@ -48,36 +43,23 @@ public class Account {
             AccountId id,
             EmployeeId employeeId,
             String username,
-            String keycloakSubject,
             AccountStatus status
     ) {
         return new Account(
                 id,
                 employeeId,
                 username,
-                keycloakSubject,
                 status
         );
     }
 
     /**
-     * Links this business account to the current Keycloak identity.
+     * Activates an account whose mandatory external provisioning has already
+     * been verified by the application-layer activation coordinator.
      *
-     * <p>Linking an external identity is deliberately independent from the
-     * account lifecycle. A successful provider reconciliation must not, by
-     * itself, mean that authentication is allowed.</p>
-     */
-    public void linkKeycloakSubject(String keycloakSubject) {
-        this.keycloakSubject = requireText(keycloakSubject, "keycloakSubject");
-    }
-
-    /**
-     * Activates a provisioned account.
-     *
-     * <p>Only ACTIVE accounts are allowed to authenticate. A Keycloak subject
-     * must already be linked before activation. DISABLED is terminal in the
-     * current lifecycle and therefore cannot be reactivated through this
-     * method.</p>
+     * <p>The Account aggregate intentionally contains no Keycloak/LDAP ids.
+     * External identity bindings belong to provisioning state, not to the
+     * business account itself.</p>
      */
     public void activate() {
         if (status == AccountStatus.ACTIVE) {
@@ -87,12 +69,6 @@ public class Account {
         if (status == AccountStatus.DISABLED) {
             throw new IllegalStateException(
                     "Disabled account cannot be activated"
-            );
-        }
-
-        if (keycloakSubject == null || keycloakSubject.isBlank()) {
-            throw new IllegalStateException(
-                    "Account cannot be activated before Keycloak identity is linked"
             );
         }
 
@@ -125,14 +101,5 @@ public class Account {
         }
 
         return normalized;
-    }
-
-    private static String normalizeNullable(String value) {
-        if (value == null) {
-            return null;
-        }
-
-        String normalized = value.trim();
-        return normalized.isEmpty() ? null : normalized;
     }
 }

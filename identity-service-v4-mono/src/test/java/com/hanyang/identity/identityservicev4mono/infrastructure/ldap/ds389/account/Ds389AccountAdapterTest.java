@@ -28,7 +28,8 @@ class Ds389AccountAdapterTest {
                 "dc=hanyang,dc=local",
                 "cn=Directory Manager",
                 "change_me",
-                "ou=People"
+                "ou=People",
+                false
         );
 
         when(ldapTemplate.lookup(

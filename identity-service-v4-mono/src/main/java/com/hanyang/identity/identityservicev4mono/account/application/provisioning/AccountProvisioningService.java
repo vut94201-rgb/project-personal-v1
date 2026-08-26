@@ -61,27 +61,24 @@ public class AccountProvisioningService {
         try {
             AccountStatus attemptedStatus = account.getStatus();
             IdentityProviderAccountPort.ProvisionedAccount provisionedAccount =
-                    synchronizeExternalAccount(account);
+                    synchronizeExternalAccount(account, syncingState.getExternalId());
 
             Account latestAccount = accountRepository.findById(accountId)
                     .orElseThrow(() -> new IllegalStateException(
                             "Account disappeared during reconciliation: " + accountId.value()
                     ));
 
-            if (hasExternalId(provisionedAccount)) {
-                latestAccount.linkKeycloakSubject(provisionedAccount.externalId());
-                accountRepository.save(latestAccount);
-            }
-
-            // Linking the external Keycloak identity no longer activates the
-            // business account. Activation is deliberately deferred until all
-            // mandatory provisioning targets are ready.
+            // The Keycloak external id is persisted only in the provisioning
+            // binding. The Account aggregate remains provider-neutral.
             //
             // Reconcile only if the effective business state changed while the
             // remote call was in flight (for example ACTIVE -> DISABLED).
             if (authenticationAllowed(attemptedStatus)
                     != authenticationAllowed(latestAccount.getStatus())) {
-                provisionedAccount = synchronizeExternalAccount(latestAccount);
+                provisionedAccount = synchronizeExternalAccount(
+                        latestAccount,
+                        provisionedAccount.externalId()
+                );
             }
 
             Instant synchronizedAt = clock.instant();
@@ -114,31 +111,25 @@ public class AccountProvisioningService {
     }
 
     private IdentityProviderAccountPort.ProvisionedAccount synchronizeExternalAccount(
-            Account account
+            Account account,
+            String externalId
     ) {
         if (account.getStatus() == AccountStatus.DISABLED) {
             return identityProviderAccountPort.disableAccount(
                     account.getUsername(),
-                    account.getKeycloakSubject()
+                    externalId
             );
         }
 
         return identityProviderAccountPort.ensureAccount(
                 account.getUsername(),
-                account.getKeycloakSubject(),
+                externalId,
                 authenticationAllowed(account.getStatus())
         );
     }
 
     private static boolean authenticationAllowed(AccountStatus status) {
         return status == AccountStatus.ACTIVE;
-    }
-
-    private static boolean hasExternalId(
-            IdentityProviderAccountPort.ProvisionedAccount provisionedAccount
-    ) {
-        return provisionedAccount.externalId() != null
-                && !provisionedAccount.externalId().isBlank();
     }
 
     private static String messageOf(RuntimeException exception) {

@@ -7,6 +7,7 @@ import com.hanyang.identity.identityservicev4mono.account.domain.Account;
 import com.hanyang.identity.identityservicev4mono.employee.domain.EmployeeId;
 import org.mapstruct.Mapper;
 
+
 @Mapper(componentModel = "spring")
 public interface AccountRestMapper {
 
@@ -24,7 +25,6 @@ public interface AccountRestMapper {
                 account.getId().value(),
                 account.getEmployeeId().value(),
                 account.getUsername(),
-                account.getKeycloakSubject(),
                 account.getStatus().getCode()
         );
     }

@@ -1,4 +1,4 @@
-package com.hanyang.identity.identityservicev4mono.infrastructure.keycloak.acces;
+package com.hanyang.identity.identityservicev4mono.infrastructure.keycloak.access;
 
 import com.hanyang.identity.identityservicev4mono.access.application.port.IdentityProviderAccessPort;
 import com.hanyang.identity.identityservicev4mono.infrastructure.keycloak.config.KeycloakProperties;
@@ -27,11 +27,11 @@ public class KeycloakAccessAdapter implements IdentityProviderAccessPort {
 
     @Override
     public void assignRole(
-            String keycloakSubject,
+            String externalUserId,
             String applicationCode,
             String roleCode
     ) {
-        String subject = requireText(keycloakSubject, "keycloakSubject");
+        String subject = requireText(externalUserId, "externalUserId");
         String normalizedRoleCode = requireText(roleCode, "roleCode");
 
         try {
@@ -73,11 +73,11 @@ public class KeycloakAccessAdapter implements IdentityProviderAccessPort {
 
     @Override
     public void revokeRole(
-            String keycloakSubject,
+            String externalUserId,
             String applicationCode,
             String roleCode
     ) {
-        String subject = requireText(keycloakSubject, "keycloakSubject");
+        String subject = requireText(externalUserId, "externalUserId");
         String normalizedRoleCode = requireText(roleCode, "roleCode");
 
         try {

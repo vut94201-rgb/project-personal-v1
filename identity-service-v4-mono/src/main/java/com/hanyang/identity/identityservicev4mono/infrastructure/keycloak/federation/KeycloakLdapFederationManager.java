@@ -220,10 +220,9 @@ public class KeycloakLdapFederationManager {
         put(config, "cachePolicy", "DEFAULT");
         put(config, "batchSizeForSync", "1000");
 
-        // WRITABLE is intentional during the transition: the existing
-        // Keycloak credential onboarding flow can still write passwords
-        // through to LDAP. Commit 6 will move credential ownership directly
-        // behind the Directory credential port.
+        // 389 DS owns credentials directly. WRITABLE remains intentional so
+        // Keycloak's UPDATE_PASSWORD UX can write a user-selected permanent
+        // password back through the LDAP federation to the directory.
         put(config, "editMode", editMode());
         put(config, "syncRegistrations", "false");
         put(config, "importEnabled", "true");

@@ -29,7 +29,7 @@ public class TemporaryPasswordGenerator {
     public String generate() {
         char[] password = new char[LENGTH];
 
-        // Guarantee a useful baseline even when a Keycloak password policy
+        // Guarantee a useful baseline even when the directory password policy
         // requires multiple character classes.
         password[0] = randomFrom(UPPER);
         password[1] = randomFrom(LOWER);

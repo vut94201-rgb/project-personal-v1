@@ -32,7 +32,6 @@ public interface AccountPersistenceMapper {
                 new AccountId(entity.getId()),
                 new EmployeeId(entity.getEmployeeId()),
                 entity.getUsername(),
-                entity.getKeycloakSubject(),
                 entity.getStatus()
         );
     }

@@ -9,6 +9,7 @@ public record Ds389Properties(
         String baseDn,
         String bindDn,
         String bindPassword,
-        String peopleOu
+        String peopleOu,
+        boolean requireTls
 ) {
 }

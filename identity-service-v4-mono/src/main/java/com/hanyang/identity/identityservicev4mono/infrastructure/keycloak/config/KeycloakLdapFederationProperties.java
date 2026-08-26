@@ -7,6 +7,7 @@ public record KeycloakLdapFederationProperties(
         boolean enabled,
         String name,
         String connectionUrl,
-        String editMode
+        String editMode,
+        boolean requireTls
 ) {
 }

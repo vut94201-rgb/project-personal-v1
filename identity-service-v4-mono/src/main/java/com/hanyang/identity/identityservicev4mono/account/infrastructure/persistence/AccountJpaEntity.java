@@ -36,12 +36,6 @@ public class AccountJpaEntity extends AuditableEntity {
     )
     private String username;
 
-    @Column(
-            name = "keycloak_subject",
-            unique = true,
-            length = 100
-    )
-    private String keycloakSubject;
 
     @Convert(converter = AccountStatusConverter.class)
     @Column(

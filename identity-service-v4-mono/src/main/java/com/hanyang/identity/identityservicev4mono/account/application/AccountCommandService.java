@@ -70,9 +70,9 @@ public class AccountCommandService {
   /**
    * Legacy/manual Keycloak preparation entry point kept for the existing REST API.
    *
-   * <p>It may link a Keycloak subject. Activation remains coordinator-owned:
-   * a PENDING account becomes ACTIVE only when the directory and Keycloak
-   * provisioning states are both current.</p>
+   * <p>It may create or repair the Keycloak provisioning binding. Activation
+   * remains coordinator-owned: a PENDING account becomes ACTIVE only when the
+   * directory and Keycloak provisioning states are both current.</p>
    */
   @Transactional
   public Account provision(AccountId accountId) {

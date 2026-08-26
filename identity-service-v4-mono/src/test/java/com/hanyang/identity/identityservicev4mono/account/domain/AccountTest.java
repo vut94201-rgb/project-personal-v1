@@ -8,44 +8,23 @@ import static org.junit.jupiter.api.Assertions.*;
 class AccountTest {
 
     @Test
-    void linkingKeycloakSubjectDoesNotActivatePendingAccount() {
+    void newAccountStartsPending() {
         Account account = Account.create(
                 AccountId.newId(),
                 EmployeeId.newId(),
                 "emp001"
         );
 
-        account.linkKeycloakSubject("kc-user-001");
-
-        assertEquals("kc-user-001", account.getKeycloakSubject());
         assertEquals(AccountStatus.PENDING, account.getStatus());
     }
 
     @Test
-    void pendingAccountCannotActivateBeforeExternalIdentityIsLinked() {
+    void pendingAccountCanBeActivatedByCoordinator() {
         Account account = Account.create(
                 AccountId.newId(),
                 EmployeeId.newId(),
                 "emp001"
         );
-
-        IllegalStateException exception = assertThrows(
-                IllegalStateException.class,
-                account::activate
-        );
-
-        assertTrue(exception.getMessage().contains("Keycloak identity"));
-        assertEquals(AccountStatus.PENDING, account.getStatus());
-    }
-
-    @Test
-    void linkedPendingAccountCanBeActivatedExplicitly() {
-        Account account = Account.create(
-                AccountId.newId(),
-                EmployeeId.newId(),
-                "emp001"
-        );
-        account.linkKeycloakSubject("kc-user-001");
 
         account.activate();
 
@@ -58,7 +37,6 @@ class AccountTest {
                 AccountId.newId(),
                 EmployeeId.newId(),
                 "emp001",
-                "kc-user-001",
                 AccountStatus.DISABLED
         );
 

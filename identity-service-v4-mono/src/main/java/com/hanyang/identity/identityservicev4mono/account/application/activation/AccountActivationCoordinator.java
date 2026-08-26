@@ -109,7 +109,7 @@ public class AccountActivationCoordinator {
         // identity (for example after migration from local Keycloak users).
         // Force federation reconciliation once more before activation.
         if (providerNeedsRefreshAfterDirectory(directoryState, providerState)
-                || !bindingMatches(account, providerState)) {
+                || !hasExternalBinding(providerState)) {
             requestIdentityProviderSynchronization(accountId);
             return;
         }
@@ -143,9 +143,9 @@ public class AccountActivationCoordinator {
             return;
         }
 
-        if (!bindingMatches(account, providerState)) {
+        if (!hasExternalBinding(providerState)) {
             throw new IllegalStateException(
-                    "Keycloak provisioning is SYNCED but the account binding does not match. accountId="
+                    "Keycloak provisioning is SYNCED but has no external binding. accountId="
                             + accountId.value()
             );
         }
@@ -160,7 +160,7 @@ public class AccountActivationCoordinator {
     ) {
         if (!isCurrent(directoryState)
                 || !isCurrent(providerState)
-                || !bindingMatches(account, providerState)) {
+                || !hasExternalBinding(providerState)) {
             return;
         }
 
@@ -229,20 +229,11 @@ public class AccountActivationCoordinator {
                 && (providerSyncedAt == null || providerSyncedAt.isBefore(directorySyncedAt));
     }
 
-    private static boolean bindingMatches(
-            Account account,
+    private static boolean hasExternalBinding(
             AccountProvisioningState providerState
     ) {
-        String accountSubject = normalizeNullable(account.getKeycloakSubject());
-        String providerExternalId = normalizeNullable(providerState.getExternalId());
-        return accountSubject != null && accountSubject.equals(providerExternalId);
-    }
-
-    private static String normalizeNullable(String value) {
-        if (value == null) {
-            return null;
-        }
-        String normalized = value.trim();
-        return normalized.isEmpty() ? null : normalized;
+        return providerState != null
+                && providerState.getExternalId() != null
+                && !providerState.getExternalId().isBlank();
     }
 }

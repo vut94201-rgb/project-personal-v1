@@ -21,8 +21,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
-
-
 class AccountProvisioningServiceTest {
 
     @Test
@@ -96,7 +94,7 @@ class AccountProvisioningServiceTest {
 
         assertEquals(AccountProvisioningStatus.SYNCED, result.status());
         assertEquals(AccountStatus.PENDING, account.getStatus());
-        assertEquals("kc-user-001", account.getKeycloakSubject());
+        assertEquals("kc-user-001", state.getExternalId());
 
         verify(providerPort).ensureAccount("emp001", null, false);
         verify(providerPort, never()).ensureAccount(anyString(), any(), eq(true));
@@ -110,7 +108,6 @@ class AccountProvisioningServiceTest {
                 AccountId.newId(),
                 EmployeeId.newId(),
                 "emp001",
-                "kc-user-001",
                 AccountStatus.DISABLED
         );
         AccountRepository accountRepository = mock(AccountRepository.class);
@@ -130,6 +127,14 @@ class AccountProvisioningServiceTest {
                 account.getId(),
                 IdentityProviderType.KEYCLOAK
         );
+        long initialRevision = state.beginSynchronization();
+        state.markSynchronized(
+                initialRevision,
+                "kc-user-001",
+                "emp001",
+                Instant.parse("2026-08-26T00:00:00Z")
+        );
+        state.requestSynchronization();
         state.beginSynchronization();
         when(stateRepository.beginSynchronization(
                 account.getId(),

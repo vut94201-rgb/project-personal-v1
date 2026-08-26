@@ -14,6 +14,7 @@ import com.hanyang.identity.identityservicev4mono.security.authorization.Identit
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
 @IdentityAdminAccess
 @Service
 @RequiredArgsConstructor
@@ -95,8 +96,10 @@ public class AccountRoleCommandService {
             throw new AccountDisabledException(account.getId());
         }
 
-        // PENDING accounts are allowed here. The outbox handler will provision
-        // the external user before assigning the role.
+        if (account.getStatus() != AccountStatus.ACTIVE) {
+            throw new AccountNotProvisionedException(account.getId());
+        }
+
         if (role.getStatus() != RoleStatus.ACTIVE) {
             throw new RoleDisabledException(role.getId());
         }

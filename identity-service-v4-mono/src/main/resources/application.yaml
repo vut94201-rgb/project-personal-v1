@@ -51,6 +51,13 @@ integration:
     admin-client-id: ${KEYCLOAK_ADMIN_CLIENT_ID:identity-service-admin}
     admin-client-secret: ${KEYCLOAK_ADMIN_CLIENT_SECRET:}
 
+    ldap-federation:
+      enabled: ${KEYCLOAK_LDAP_FEDERATION_ENABLED:true}
+      name: ${KEYCLOAK_LDAP_FEDERATION_NAME:hanyang-389ds}
+      connection-url: ${KEYCLOAK_LDAP_CONNECTION_URL:ldap://host.containers.internal:3389}
+      edit-mode: ${KEYCLOAK_LDAP_EDIT_MODE:WRITABLE}
+      require-tls: ${KEYCLOAK_LDAP_REQUIRE_TLS:false}
+
   ds389:
     enabled: ${DS389_ENABLED:true}
     url: ${DS389_URL:ldap://localhost:3389}
@@ -58,6 +65,7 @@ integration:
     bind-dn: ${DS389_BIND_DN:cn=Directory Manager}
     bind-password: ${DS389_BIND_PASSWORD:change_me}
     people-ou: ${DS389_PEOPLE_OU:ou=People}
+    require-tls: ${DS389_REQUIRE_TLS:false}
 
 outbox:
   worker:

@@ -140,14 +140,12 @@ class AccountDirectoryProvisioningServiceTest {
                 AccountId.newId(),
                 employeeId,
                 "emp001",
-                "kc-user-001",
                 AccountStatus.ACTIVE
         );
         Account disabled = Account.rehydrate(
                 active.getId(),
                 employeeId,
                 "emp001",
-                "kc-user-001",
                 AccountStatus.DISABLED
         );
         Employee employee = Employee.create(employeeId, "E000001", "Test User");

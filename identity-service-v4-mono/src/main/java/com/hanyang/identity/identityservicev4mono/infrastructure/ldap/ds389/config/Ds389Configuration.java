@@ -1,7 +1,9 @@
 package com.hanyang.identity.identityservicev4mono.infrastructure.ldap.ds389.config;
 
 import com.hanyang.identity.identityservicev4mono.account.application.port.AccountDirectoryPort;
+import com.hanyang.identity.identityservicev4mono.account.application.port.DirectoryCredentialPort;
 import com.hanyang.identity.identityservicev4mono.infrastructure.ldap.ds389.account.Ds389AccountAdapter;
+import com.hanyang.identity.identityservicev4mono.infrastructure.ldap.ds389.account.Ds389CredentialAdapter;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -45,6 +47,14 @@ public class Ds389Configuration {
             Ds389Properties properties
     ) {
         return new Ds389AccountAdapter(ldapTemplate, properties);
+    }
+
+    @Bean
+    public DirectoryCredentialPort ds389DirectoryCredentialPort(
+            @Qualifier("ds389LdapTemplate") LdapTemplate ldapTemplate,
+            Ds389Properties properties
+    ) {
+        return new Ds389CredentialAdapter(ldapTemplate, properties);
     }
 
     private static String requireText(String value, String propertyName) {
