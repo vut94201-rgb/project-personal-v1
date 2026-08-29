@@ -9,8 +9,12 @@ import org.keycloak.admin.client.Keycloak;
 import org.keycloak.admin.client.KeycloakBuilder;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Profile;
+import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
+
+import java.util.Arrays;
 
 @Component
 @Profile("dev")
@@ -19,11 +23,13 @@ import org.springframework.stereotype.Component;
 @Slf4j
 public class DevApplicationRunner implements ApplicationRunner {
     Keycloak keycloakAdminClient;
+    ProfileChecker profileChecker;
     KeycloakProperties properties;
 
     @Override
     public void run(ApplicationArguments args) throws Exception {
         try {
+
             log.info("Keycloak URL = {}", properties.serverUrl());
             log.info("Keycloak realm = {}", properties.realm());
             log.info("Keycloak client = {}", properties.adminClientId());
@@ -45,4 +51,5 @@ public class DevApplicationRunner implements ApplicationRunner {
             log.error("Keycloak playground test failed", e);
         }
     }
+
 }

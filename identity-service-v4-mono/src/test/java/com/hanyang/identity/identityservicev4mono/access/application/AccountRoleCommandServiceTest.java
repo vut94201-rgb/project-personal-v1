@@ -1,6 +1,5 @@
-package com.hanyang.identity.identityservicev4mono.acces.application;
+package com.hanyang.identity.identityservicev4mono.access.application;
 
-import com.hanyang.identity.identityservicev4mono.access.application.AccountRoleCommandService;
 import com.hanyang.identity.identityservicev4mono.access.application.exception.AccountNotProvisionedException;
 import com.hanyang.identity.identityservicev4mono.access.application.provisioning.AccountRoleProvisioningService;
 import com.hanyang.identity.identityservicev4mono.access.domain.*;
