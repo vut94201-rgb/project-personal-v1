@@ -7,6 +7,7 @@ import com.hanyang.identity.identityservicev4mono.account.application.AccountCom
 import com.hanyang.identity.identityservicev4mono.account.application.AccountQueryService;
 import com.hanyang.identity.identityservicev4mono.account.domain.Account;
 import com.hanyang.identity.identityservicev4mono.account.domain.AccountId;
+import com.hanyang.identity.identityservicev4mono.security.authorization.IdentityAdminAccess;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -18,6 +19,7 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/v1/accounts")
 @RequiredArgsConstructor
+
 public class AccountController {
 
     private final AccountCommandService commandService;

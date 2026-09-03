@@ -35,4 +35,12 @@ public interface EmployeeJpaRepository extends BaseJpaRepository<EmployeeJpaEnti
       @Nullable @Param("employeeId") UUID employeeId,
       @Nullable @Param("employeeCode") String employeeCode,
       @Nullable @Param("employeeStatus") EmployeeStatus employeeStatus);
+
+  @Query(
+      """
+                select  e from EmployeeJpaEntity  e inner  join  AccountJpaEntity  a
+                    on  e.id=a.employeeId
+                    where :accountId is not null  and a.id=:accountId
+        """)
+  Optional<EmployeeJpaEntity> findEmployeeByAccountId(@Nullable @Param("accountId") UUID accountId);
 }

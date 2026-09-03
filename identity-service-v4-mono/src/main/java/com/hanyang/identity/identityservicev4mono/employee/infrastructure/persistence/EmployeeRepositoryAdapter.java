@@ -69,6 +69,12 @@ public class EmployeeRepositoryAdapter implements EmployeeRepository {
   }
 
   @Override
+  public Optional<Employee> findEmployeeByAccountId(
+      @org.jspecify.annotations.Nullable UUID accountId) {
+    return jpaRepository.findEmployeeByAccountId(accountId).map(mapper::toDomain);
+  }
+
+  @Override
   public List<Employee> findAllByEmployeeStatus(@Nullable EmployeeStatus employeeStatus) {
     return jpaRepository.findAllByEmployeeStatus(employeeStatus).stream()
         .map(mapper::toDomain)

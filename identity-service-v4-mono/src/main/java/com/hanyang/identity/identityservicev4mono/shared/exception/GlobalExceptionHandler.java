@@ -3,10 +3,7 @@ package com.hanyang.identity.identityservicev4mono.shared.exception;
 
 import com.hanyang.identity.identityservicev4mono.access.application.exception.*;
 import com.hanyang.identity.identityservicev4mono.account.application.exception.*;
-import com.hanyang.identity.identityservicev4mono.employee.application.exception.EmployeeCodeAlreadyExistsException;
-import com.hanyang.identity.identityservicev4mono.employee.application.exception.EmployeeEmailAlreadyExistsException;
-import com.hanyang.identity.identityservicev4mono.employee.application.exception.EmployeeNotFoundException;
-import com.hanyang.identity.identityservicev4mono.employee.application.exception.EmployeeProfileNotFoundException;
+import com.hanyang.identity.identityservicev4mono.employee.application.exception.*;
 import com.hanyang.identity.identityservicev4mono.infrastructure.keycloak.exception.KeycloakIntegrationException;
 import com.hanyang.identity.identityservicev4mono.infrastructure.keycloak.exception.KeycloakUserConflictException;
 import com.hanyang.identity.identityservicev4mono.organization.application.exception.*;
@@ -81,6 +78,21 @@ public class GlobalExceptionHandler {
         return build(
                 HttpStatus.CONFLICT,
                 "EMPLOYEE_EMAIL_ALREADY_EXISTS",
+                exception.getMessage(),
+                request.getRequestURI(),
+                Map.of()
+        );
+    }
+
+
+    @ExceptionHandler(NationalIdentityAlreadyAssignedException.class)
+    public ResponseEntity<ApiErrorResponse> handleNationalIdentityAlreadyAssigned(
+            NationalIdentityAlreadyAssignedException exception,
+            HttpServletRequest request
+    ) {
+        return build(
+                HttpStatus.CONFLICT,
+                "NATIONAL_IDENTITY_ALREADY_ASSIGNED",
                 exception.getMessage(),
                 request.getRequestURI(),
                 Map.of()
@@ -504,20 +516,6 @@ public class GlobalExceptionHandler {
         return build(
                 HttpStatus.CONFLICT,
                 "ACCOUNT_CREDENTIAL_ONBOARDING_NOT_ALLOWED",
-                exception.getMessage(),
-                request.getRequestURI(),
-                Map.of()
-        );
-    }
-
-    @ExceptionHandler(AccountCredentialEmailUnavailableException.class)
-    public ResponseEntity<ApiErrorResponse> handleAccountCredentialEmailUnavailable(
-            AccountCredentialEmailUnavailableException exception,
-            HttpServletRequest request
-    ) {
-        return build(
-                HttpStatus.CONFLICT,
-                "ACCOUNT_CREDENTIAL_EMAIL_UNAVAILABLE",
                 exception.getMessage(),
                 request.getRequestURI(),
                 Map.of()

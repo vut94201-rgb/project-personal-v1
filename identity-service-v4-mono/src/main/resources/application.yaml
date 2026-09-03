@@ -27,7 +27,16 @@ spring:
       discovery:
         register: true
         register-health-check: false
-
+  data:
+    redis:
+      host: ${REDIS_HOST:redis-18858.crce272.asia-seast1-1.gcp.cloud.redislabs.com}
+      port: ${REDIS_PORT:18858}
+      connect-timeout: 5s
+      timeout: 5s
+      repositories:
+        enabled: false
+      username: ${REDIS_USERNAME:default}
+      password: ${REDIS_PASSWORD:V6Guaqp9U039dUGQtz8n3c5i1NM1XrZ9}
 server:
   port: ${SERVER_PORT:8082}
 
@@ -81,3 +90,20 @@ operations:
   provisioning-health:
     stale-after: ${PROVISIONING_HEALTH_STALE_AFTER:15m}
     provider-probe-enabled: ${PROVISIONING_HEALTH_PROVIDER_PROBE_ENABLED:true}
+employee:
+  national-identity:
+    protection:
+      encryption-key: ${EMPLOYEE_NATIONAL_ID_ENCRYPTION_KEY:oNfOz/byhtc9qp2mYugJEg7oOeCN+CMM4DIRi8EHY/I=}
+      fingerprint-key: ${EMPLOYEE_NATIONAL_ID_FINGERPRINT_KEY:alnASeKt27Yp6TjkZgP904xgWxx907qHFyPnyPve10Q=}
+security:
+  access-revocation:
+    # Phải >= access-token lifespan lớn nhất + safety margin.
+    # Ví dụ access token 5m => giữ revoked sid 6m.
+    session-retention: ${ACCESS_REVOCATION_SESSION_RETENTION:6m}
+    key-prefix: ${ACCESS_REVOCATION_KEY_PREFIX:hanyang:security:revocation}
+
+  oidc:
+    backchannel-logout:
+      issuer: ${OIDC_ISSUER:http://localhost:18080/realms/hanyang}
+      allowed-audiences:
+        - ${OIDC_WEB_CLIENT_ID:hanyang-web}

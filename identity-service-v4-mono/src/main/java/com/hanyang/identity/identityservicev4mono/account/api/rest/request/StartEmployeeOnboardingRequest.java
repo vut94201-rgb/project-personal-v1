@@ -1,17 +1,40 @@
 package com.hanyang.identity.identityservicev4mono.account.api.rest.request;
 
+import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
-import java.util.UUID;
+import java.time.LocalDate;
 
-/**
- * Starts enterprise account onboarding for an Employee that already exists in Identity.
- *
- * <p>This is an Identity-admin workflow request, not a public self-registration contract.
- * Organizational placement and employee identity are managed separately and must not be supplied by
- * the employee through this request.
- */
-public record StartAccountOnboardingRequest(
-    @NotNull UUID employeeId, @NotBlank @Size(max = 100) String username) {}
+
+public record StartEmployeeOnboardingRequest(
+
+        @NotBlank
+        @Size(max = 150)
+        String fullName,
+
+        @NotBlank
+        @Size(max = 100)
+        String username,
+
+        @NotBlank
+        @Pattern(
+                regexp = "\\d{12}",
+                message = "nationalIdentityNumber must contain exactly 12 digits"
+        )
+        String nationalIdentityNumber,
+
+        @Email
+        @Size(max = 254)
+        String email,
+
+        @Size(max = 50)
+        String phone,
+
+        @Size(max = 500)
+        String address,
+
+        LocalDate joinDate
+) {
+}

@@ -1,6 +1,5 @@
 package com.hanyang.identity.identityservicev4mono.access.application;
 
-
 import com.hanyang.identity.identityservicev4mono.access.application.exception.*;
 import com.hanyang.identity.identityservicev4mono.access.application.port.IdentityProviderAccessPort;
 import com.hanyang.identity.identityservicev4mono.access.application.provisioning.AccountRoleProvisioningService;
@@ -20,100 +19,72 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class AccountRoleCommandService {
 
-    private final AccountRepository accountRepository;
-    private final RoleRepository roleRepository;
-    private final ApplicationRepository applicationRepository;
-    private final AccountRoleRepository accountRoleRepository;
-    private final AccountRoleProvisioningService provisioningService;
+  private final AccountRepository accountRepository;
+  private final RoleRepository roleRepository;
+  private final ApplicationRepository applicationRepository;
+  private final AccountRoleRepository accountRoleRepository;
+  private final AccountRoleProvisioningService provisioningService;
 
-    @Transactional
-    public void assign(
-            AccountId accountId,
-            RoleId roleId
-    ) {
-        Account account = getAccount(accountId);
-        Role role = getRole(roleId);
-        validateAssignable(account, role);
+  @Transactional
+  public void assign(AccountId accountId, RoleId roleId) {
+    Account account = getAccount(accountId);
+    Role role = getRole(roleId);
 
-        if (accountRoleRepository.exists(accountId, roleId)) {
-            throw new AccountRoleAlreadyAssignedException(
-                    accountId,
-                    roleId
-            );
-        }
+      validateAssignable(account, role);
 
-        accountRoleRepository.save(
-                AccountRole.create(accountId, roleId)
-        );
 
-        provisioningService.requestSynchronization(
-                accountId,
-                roleId,
-                true
-        );
+    if (accountRoleRepository.exists(accountId, roleId)) {
+      throw new AccountRoleAlreadyAssignedException(accountId, roleId);
     }
 
-    @Transactional
-    public void revoke(
-            AccountId accountId,
-            RoleId roleId
-    ) {
-        getAccount(accountId);
-        getRole(roleId);
+    accountRoleRepository.save(AccountRole.create(accountId, roleId));
 
-        if (!accountRoleRepository.exists(accountId, roleId)) {
-            throw new AccountRoleNotAssignedException(
-                    accountId,
-                    roleId
-            );
-        }
+    provisioningService.requestSynchronization(accountId, roleId, true);
+  }
 
-        accountRoleRepository.delete(accountId, roleId);
-        provisioningService.requestSynchronization(
-                accountId,
-                roleId,
-                false
-        );
+  @Transactional
+  public void revoke(AccountId accountId, RoleId roleId) {
+    getAccount(accountId);
+    getRole(roleId);
+
+    if (!accountRoleRepository.exists(accountId, roleId)) {
+      throw new AccountRoleNotAssignedException(accountId, roleId);
     }
 
-    private Account getAccount(AccountId accountId) {
-        return accountRepository
-                .findById(accountId)
-                .orElseThrow(() -> new AccountNotFoundException(accountId));
+    accountRoleRepository.delete(accountId, roleId);
+    provisioningService.requestSynchronization(accountId, roleId, false);
+  }
+
+  private Account getAccount(AccountId accountId) {
+    return accountRepository
+        .findById(accountId)
+        .orElseThrow(() -> new AccountNotFoundException(accountId));
+  }
+
+  private Role getRole(RoleId roleId) {
+    return roleRepository.findById(roleId).orElseThrow(() -> new RoleNotFoundException(roleId));
+  }
+
+  private void validateAssignable(Account account, Role role) {
+    if (account.getStatus() == AccountStatus.DISABLED) {
+      throw new AccountDisabledException(account.getId());
     }
 
-    private Role getRole(RoleId roleId) {
-        return roleRepository
-                .findById(roleId)
-                .orElseThrow(() -> new RoleNotFoundException(roleId));
+    if (account.getStatus() != AccountStatus.ACTIVE) {
+      throw new AccountNotProvisionedException(account.getId());
     }
 
-    private void validateAssignable(
-            Account account,
-            Role role
-    ) {
-        if (account.getStatus() == AccountStatus.DISABLED) {
-            throw new AccountDisabledException(account.getId());
-        }
-
-        if (account.getStatus() != AccountStatus.ACTIVE) {
-            throw new AccountNotProvisionedException(account.getId());
-        }
-
-        if (role.getStatus() != RoleStatus.ACTIVE) {
-            throw new RoleDisabledException(role.getId());
-        }
-
-        Application application = applicationRepository
-                .findById(role.getApplicationId())
-                .orElseThrow(() ->
-                        new ApplicationNotFoundException(
-                                role.getApplicationId()
-                        )
-                );
-
-        if (application.getStatus() != ApplicationStatus.ACTIVE) {
-            throw new ApplicationDisabledException(application.getId());
-        }
+    if (role.getStatus() != RoleStatus.ACTIVE) {
+      throw new RoleDisabledException(role.getId());
     }
+
+    Application application =
+        applicationRepository
+            .findById(role.getApplicationId())
+            .orElseThrow(() -> new ApplicationNotFoundException(role.getApplicationId()));
+
+    if (application.getStatus() != ApplicationStatus.ACTIVE) {
+      throw new ApplicationDisabledException(application.getId());
+    }
+  }
 }

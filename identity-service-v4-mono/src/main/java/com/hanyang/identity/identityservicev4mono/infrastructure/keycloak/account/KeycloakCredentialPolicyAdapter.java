@@ -1,6 +1,7 @@
 package com.hanyang.identity.identityservicev4mono.infrastructure.keycloak.account;
 
-import com.hanyang.identity.identityservicev4mono.account.application.port.IdentityProviderCredentialActionPort;
+
+import com.hanyang.identity.identityservicev4mono.account.application.port.IdentityProviderCredentialPolicyPort;
 import com.hanyang.identity.identityservicev4mono.infrastructure.keycloak.config.KeycloakProperties;
 import com.hanyang.identity.identityservicev4mono.infrastructure.keycloak.exception.KeycloakIntegrationException;
 import jakarta.ws.rs.ProcessingException;
@@ -16,8 +17,8 @@ import java.util.List;
 
 @Component
 @RequiredArgsConstructor
-public class KeycloakCredentialActionAdapter
-        implements IdentityProviderCredentialActionPort {
+public class KeycloakCredentialPolicyAdapter
+        implements IdentityProviderCredentialPolicyPort {
 
     private static final String UPDATE_PASSWORD = "UPDATE_PASSWORD";
 
@@ -25,7 +26,7 @@ public class KeycloakCredentialActionAdapter
     private final KeycloakProperties properties;
 
     @Override
-    public void requirePasswordChange(String externalId) {
+    public void clearPasswordChangeRequirement(String externalId) {
         String normalizedExternalId = requireText(
                 externalId,
                 "Keycloak user id"
@@ -35,68 +36,35 @@ public class KeycloakCredentialActionAdapter
             UserResource userResource = user(normalizedExternalId);
             UserRepresentation representation = userResource.toRepresentation();
 
-            List<String> requiredActions = representation.getRequiredActions() == null
-                    ? new ArrayList<>()
-                    : new ArrayList<>(representation.getRequiredActions());
+            List<String> existing = representation.getRequiredActions();
 
-            if (!requiredActions.contains(UPDATE_PASSWORD)) {
-                requiredActions.add(UPDATE_PASSWORD);
-                representation.setRequiredActions(requiredActions);
-                userResource.update(representation);
+            if (existing == null || !existing.contains(UPDATE_PASSWORD)) {
+                return;
             }
+
+            List<String> requiredActions = new ArrayList<>(existing);
+            requiredActions.removeIf(UPDATE_PASSWORD::equals);
+
+            representation.setRequiredActions(requiredActions);
+            userResource.update(representation);
+
         } catch (ProcessingException exception) {
             throw unableToConnect(exception);
+
         } catch (WebApplicationException exception) {
             throw new KeycloakIntegrationException(
-                    "Unable to require Keycloak password change. HTTP "
+                    "Unable to clear Keycloak password-change requirement. HTTP "
                             + exception.getResponse().getStatus(),
                     exception
             );
+
         } catch (RuntimeException exception) {
             if (exception instanceof KeycloakIntegrationException integrationException) {
                 throw integrationException;
             }
+
             throw new KeycloakIntegrationException(
-                    "Unable to require Keycloak password change",
-                    exception
-            );
-        }
-    }
-
-    @Override
-    public boolean sendPasswordSetupEmail(String externalId) {
-        String normalizedExternalId = requireText(
-                externalId,
-                "Keycloak user id"
-        );
-
-        try {
-            UserResource userResource = user(normalizedExternalId);
-            UserRepresentation representation = userResource.toRepresentation();
-
-            if (representation.getEmail() == null
-                    || representation.getEmail().isBlank()) {
-                return false;
-            }
-
-            userResource.executeActionsEmail(
-                    List.of(UPDATE_PASSWORD)
-            );
-            return true;
-        } catch (ProcessingException exception) {
-            throw unableToConnect(exception);
-        } catch (WebApplicationException exception) {
-            throw new KeycloakIntegrationException(
-                    "Unable to send Keycloak password setup email. HTTP "
-                            + exception.getResponse().getStatus(),
-                    exception
-            );
-        } catch (RuntimeException exception) {
-            if (exception instanceof KeycloakIntegrationException integrationException) {
-                throw integrationException;
-            }
-            throw new KeycloakIntegrationException(
-                    "Unable to send Keycloak password setup email",
+                    "Unable to clear Keycloak password-change requirement",
                     exception
             );
         }
@@ -104,7 +72,10 @@ public class KeycloakCredentialActionAdapter
 
     private UserResource user(String externalId) {
         return keycloakAdminClient
-                .realm(requireText(properties.realm(), "integration.keycloak.realm"))
+                .realm(requireText(
+                        properties.realm(),
+                        "integration.keycloak.realm"
+                ))
                 .users()
                 .get(externalId);
     }
@@ -127,6 +98,7 @@ public class KeycloakCredentialActionAdapter
                     fieldName + " must not be blank"
             );
         }
+
         return value.trim();
     }
 }

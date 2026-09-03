@@ -14,11 +14,12 @@ import org.springframework.util.StringUtils;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
-//@IdentityReadAccess
+// @IdentityReadAccess
 @Transactional(readOnly = true)
 public class EmployeeQueryService {
 
@@ -44,5 +45,11 @@ public class EmployeeQueryService {
   public List<Employee> findAllByEmployeeStatus(@Nullable EmployeeStatus employeeStatus) {
 
     return employeeRepository.findAllByEmployeeStatus(employeeStatus);
+  }
+
+  public Employee findEmployeeByAccountId(UUID accountId) {
+    return employeeRepository
+        .findEmployeeByAccountId(accountId)
+        .orElseThrow(() -> new EmployeeNotFoundException(accountId.toString()));
   }
 }

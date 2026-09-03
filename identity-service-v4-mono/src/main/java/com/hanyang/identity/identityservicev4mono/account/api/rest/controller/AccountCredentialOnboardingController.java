@@ -1,9 +1,10 @@
 package com.hanyang.identity.identityservicev4mono.account.api.rest.controller;
 
+import com.hanyang.identity.identityservicev4mono.account.api.rest.response.InitialPasswordResponse;
 
-import com.hanyang.identity.identityservicev4mono.account.api.rest.response.TemporaryPasswordResponse;
 import com.hanyang.identity.identityservicev4mono.account.application.credential.AccountCredentialOnboardingService;
-import com.hanyang.identity.identityservicev4mono.account.application.credential.TemporaryPasswordOnboardingResult;
+import com.hanyang.identity.identityservicev4mono.account.application.credential.InitialPasswordOnboardingResult;
+
 import com.hanyang.identity.identityservicev4mono.account.domain.AccountId;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.CacheControl;
@@ -18,32 +19,17 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class AccountCredentialOnboardingController {
 
-    private final AccountCredentialOnboardingService onboardingService;
+  private final AccountCredentialOnboardingService onboardingService;
 
-    @PostMapping("/temporary-password")
-    public ResponseEntity<TemporaryPasswordResponse> issueTemporaryPassword(
-            @PathVariable UUID accountId
-    ) {
-        TemporaryPasswordOnboardingResult result =
-                onboardingService.issueTemporaryPassword(
-                        new AccountId(accountId)
-                );
+  @PostMapping("/initial-password")
+  public ResponseEntity<InitialPasswordResponse> issueInitialPassword(
+      @PathVariable UUID accountId) {
+    InitialPasswordOnboardingResult result =
+        onboardingService.issueInitialPassword(new AccountId(accountId));
 
-        return ResponseEntity.ok()
-                .cacheControl(CacheControl.noStore())
-                .header("Pragma", "no-cache")
-                .body(new TemporaryPasswordResponse(
-                        result.temporaryPassword()
-                ));
-    }
-
-    @PostMapping("/password-setup-email")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void sendPasswordSetupEmail(
-            @PathVariable UUID accountId
-    ) {
-        onboardingService.sendPasswordSetupEmail(
-                new AccountId(accountId)
-        );
-    }
+    return ResponseEntity.ok()
+        .cacheControl(CacheControl.noStore())
+        .header("Pragma", "no-cache")
+        .body(new InitialPasswordResponse(result.initialPassword()));
+  }
 }

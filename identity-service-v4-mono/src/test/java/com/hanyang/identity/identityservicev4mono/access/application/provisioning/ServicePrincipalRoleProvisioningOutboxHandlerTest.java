@@ -1,5 +1,9 @@
 package com.hanyang.identity.identityservicev4mono.access.application.provisioning;
 
+import com.hanyang.identity.identityservicev4mono.access.domain.RoleId;
+import com.hanyang.identity.identityservicev4mono.service_identity.domain.ServicePrincipalId;
+import com.hanyang.identity.identityservicev4mono.shared.identityprovider.IdentityProviderType;
+import com.hanyang.identity.identityservicev4mono.shared.outbox.OutboxEvent;
 import org.junit.jupiter.api.Test;
 
 import java.util.UUID;

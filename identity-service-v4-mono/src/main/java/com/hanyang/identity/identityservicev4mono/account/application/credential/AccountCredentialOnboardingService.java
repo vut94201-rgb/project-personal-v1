@@ -1,12 +1,13 @@
 package com.hanyang.identity.identityservicev4mono.account.application.credential;
 
 
-import com.hanyang.identity.identityservicev4mono.account.application.exception.AccountCredentialEmailUnavailableException;
+
 import com.hanyang.identity.identityservicev4mono.account.application.exception.AccountCredentialOnboardingNotAllowedException;
 import com.hanyang.identity.identityservicev4mono.account.application.exception.AccountNotFoundException;
 import com.hanyang.identity.identityservicev4mono.account.application.port.DirectoryCredentialPort;
-import com.hanyang.identity.identityservicev4mono.account.application.port.IdentityProviderCredentialActionPort;
 
+
+import com.hanyang.identity.identityservicev4mono.account.application.port.IdentityProviderCredentialPolicyPort;
 import com.hanyang.identity.identityservicev4mono.account.application.provisioning.AccountProvisioningState;
 import com.hanyang.identity.identityservicev4mono.account.application.provisioning.AccountProvisioningStateRepository;
 import com.hanyang.identity.identityservicev4mono.account.application.provisioning.AccountProvisioningStatus;
@@ -18,7 +19,6 @@ import com.hanyang.identity.identityservicev4mono.security.authorization.Identit
 import com.hanyang.identity.identityservicev4mono.shared.identityprovider.IdentityProviderType;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-
 @IdentityAdminAccess
 @Service
 @RequiredArgsConstructor
@@ -29,55 +29,30 @@ public class AccountCredentialOnboardingService {
     private final AccountRepository accountRepository;
     private final AccountProvisioningStateRepository provisioningStateRepository;
     private final DirectoryCredentialPort directoryCredentialPort;
-    private final IdentityProviderCredentialActionPort credentialActionPort;
-    private final TemporaryPasswordGenerator temporaryPasswordGenerator;
+    private final IdentityProviderCredentialPolicyPort credentialPolicyPort;
+    private final InitialPasswordGenerator initialPasswordGenerator;
 
-    /**
-     * Generates a one-time temporary password, installs it directly in the
-     * directory credential store, and tells the identity provider to require a
-     * password change through its authentication UX.
-     *
-     * <p>The password value is never persisted locally. 389 DS owns the stored
-     * password hash; Keycloak owns only the UPDATE_PASSWORD required action.</p>
-     */
-    public TemporaryPasswordOnboardingResult issueTemporaryPassword(
+    public InitialPasswordOnboardingResult issueInitialPassword(
             AccountId accountId
     ) {
         ProvisionedAccount provisioned = requireProvisionedActiveAccount(accountId);
-        String temporaryPassword = temporaryPasswordGenerator.generate();
+        String initialPassword = initialPasswordGenerator.generate();
 
-        // Set the required action first. If the LDAP write then fails, the
-        // account remains protected by the existing credential plus the
-        // password-change requirement. The required action itself is idempotent.
-        credentialActionPort.requirePasswordChange(
+        // Older versions of Hanyang installed UPDATE_PASSWORD here. Remove it
+        // first so both existing and newly onboarded users follow the current
+        // business rule: changing the generated password is optional.
+        credentialPolicyPort.clearPasswordChangeRequirement(
                 provisioned.keycloakExternalId()
         );
 
         directoryCredentialPort.setPassword(
                 provisioned.account().getUsername(),
-                temporaryPassword
+                initialPassword
         );
 
-        return new TemporaryPasswordOnboardingResult(
-                temporaryPassword
+        return new InitialPasswordOnboardingResult(
+                initialPassword
         );
-    }
-
-    /**
-     * Keycloak sends an UPDATE_PASSWORD action email. With the LDAP federation
-     * in WRITABLE mode, the permanent password selected in that flow is written
-     * back to 389 DS, which remains the credential source of truth.
-     */
-    public void sendPasswordSetupEmail(AccountId accountId) {
-        ProvisionedAccount provisioned = requireProvisionedActiveAccount(accountId);
-
-        boolean requested = credentialActionPort.sendPasswordSetupEmail(
-                provisioned.keycloakExternalId()
-        );
-
-        if (!requested) {
-            throw new AccountCredentialEmailUnavailableException(accountId);
-        }
     }
 
     private ProvisionedAccount requireProvisionedActiveAccount(AccountId accountId) {
@@ -100,7 +75,10 @@ public class AccountCredentialOnboardingService {
                         account.getStatus()
                 ));
 
-        return new ProvisionedAccount(account, state.getExternalId());
+        return new ProvisionedAccount(
+                account,
+                state.getExternalId()
+        );
     }
 
     private static boolean isCurrent(AccountProvisioningState state) {
@@ -109,7 +87,8 @@ public class AccountCredentialOnboardingService {
     }
 
     private static boolean hasExternalId(AccountProvisioningState state) {
-        return state.getExternalId() != null && !state.getExternalId().isBlank();
+        return state.getExternalId() != null
+                && !state.getExternalId().isBlank();
     }
 
     private record ProvisionedAccount(

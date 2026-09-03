@@ -2,17 +2,22 @@ package com.hanyang.identity.identityservicev4mono.account.application.onboardin
 
 import com.hanyang.identity.identityservicev4mono.account.application.AccountCommandService;
 import com.hanyang.identity.identityservicev4mono.account.application.AccountQueryService;
+import com.hanyang.identity.identityservicev4mono.account.domain.Account;
 import com.hanyang.identity.identityservicev4mono.employee.application.EmployeeCommandService;
 import com.hanyang.identity.identityservicev4mono.employee.application.EmployeeQueryService;
 import com.hanyang.identity.identityservicev4mono.organization.application.CrewCommandService;
 import com.hanyang.identity.identityservicev4mono.organization.application.CrewQueryService;
 import com.hanyang.identity.identityservicev4mono.organization.application.DepartmentCommandService;
 import com.hanyang.identity.identityservicev4mono.organization.application.DepartmentQueryService;
+import com.hanyang.identity.identityservicev4mono.security.authorization.IdentityAdminAccess;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.util.UUID;
+
 @Service
 @Slf4j
+@IdentityAdminAccess
 public class AccountOnboardingService {
 
   private final AccountCommandService accountCommandService;
@@ -42,4 +47,9 @@ public class AccountOnboardingService {
     this.departmentQueryService = departmentQueryService;
     this.departmentCommandService = departmentCommandService;
   }
+
+
+//  public Account createAccount(String username,UUID employeeId) {
+//
+//  }
 }

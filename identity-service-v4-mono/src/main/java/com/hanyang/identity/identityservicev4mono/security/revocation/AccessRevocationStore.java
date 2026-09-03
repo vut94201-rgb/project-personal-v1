@@ -1,15 +1,12 @@
 package com.hanyang.identity.identityservicev4mono.security.revocation;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.util.Optional;
 
 public interface AccessRevocationStore {
 
-    void revokeUserBefore(String subject, Instant revokedAt);
+    void revokeSession(String sessionId, Duration ttl);
 
-    Optional<Instant> findUserRevokedBefore(String subject);
-
-    void revokeSession(String sessionId, Instant revokedAt);
-
-    Optional<Instant> findSessionRevokedBefore(String sessionId);
+    boolean isSessionRevoked(String sessionId);
 }

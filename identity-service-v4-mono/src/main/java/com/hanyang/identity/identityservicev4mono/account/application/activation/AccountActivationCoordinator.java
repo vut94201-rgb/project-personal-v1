@@ -22,15 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Instant;
 import java.util.Optional;
 
-/**
- * Coordinates the transition from a technically provisioned account to an
- * ACTIVE business account.
- *
- * <p>The coordinator deliberately does not call either provisioning service.
- * It observes their persisted state and publishes the next required work via
- * the same revision/outbox mechanism. This avoids a service dependency cycle
- * while keeping the transition idempotent.</p>
- */
+
 @Service
 public class AccountActivationCoordinator {
 
@@ -56,14 +48,6 @@ public class AccountActivationCoordinator {
         this.outboxPublisher = outboxPublisher;
     }
 
-    /**
-     * Called after a successful 389 DS reconciliation.
-     *
-     * <p>For a new PENDING account, the directory must exist first. Once that
-     * prerequisite is current, this method schedules the first Keycloak
-     * federation reconciliation. If Keycloak is already current, activation
-     * can happen immediately.</p>
-     */
     @Transactional
     public void afterDirectorySynchronization(AccountId accountId) {
         Account account = accountRepository.findById(accountId).orElse(null);
@@ -92,9 +76,7 @@ public class AccountActivationCoordinator {
         AccountProvisioningState providerState = identityProviderState.get();
         if (providerState.getStatus() == AccountProvisioningStatus.FAILED
                 || providerState.getStatus() == AccountProvisioningStatus.DRIFTED) {
-            // A previous federation attempt may legitimately have failed while
-            // the LDAP identity did not exist yet. A fresh directory SYNC is
-            // the prerequisite change that makes one automatic retry useful.
+
             requestIdentityProviderSynchronization(accountId);
             return;
         }

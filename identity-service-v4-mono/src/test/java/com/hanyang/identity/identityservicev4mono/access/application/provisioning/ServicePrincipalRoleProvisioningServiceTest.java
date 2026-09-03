@@ -1,5 +1,6 @@
 package com.hanyang.identity.identityservicev4mono.access.application.provisioning;
 
+import com.hanyang.identity.identityservicev4mono.access.application.port.IdentityProviderServicePrincipalAccessPort;
 import com.hanyang.identity.identityservicev4mono.access.domain.*;
 import com.hanyang.identity.identityservicev4mono.service_identity.application.provisioning.ServicePrincipalProvisioningState;
 import com.hanyang.identity.identityservicev4mono.service_identity.application.provisioning.ServicePrincipalProvisioningStateRepository;

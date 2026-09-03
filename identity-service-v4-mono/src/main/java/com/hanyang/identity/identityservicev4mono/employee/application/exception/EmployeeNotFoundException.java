@@ -12,4 +12,5 @@ public class EmployeeNotFoundException
     public EmployeeNotFoundException(String code) {
         super("Employee not found: " + code);
     }
+
 }
